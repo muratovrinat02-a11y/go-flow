@@ -1,83 +1,24 @@
-/* GO Flow — лендинг для специалистов. Без зависимостей. */
+/* GO Flow — фронтенд лендинга и страниц проектов. Без зависимостей. */
 (function () {
   'use strict';
 
-  /* ================= НАСТРОЙКИ ================= */
-  var CONFIG = {
-    // Макет: подсвечивает значения, которые нужно подтвердить. Перед запуском — false.
-    demo: true,
-    // Куда отправлять анкету (POST JSON). Пусто — анкета никуда не уходит, только показывается результат.
-    formEndpoint: '',
-    // Номер счётчика Яндекс Метрики. Пусто — Метрика не подключается.
-    ymId: '',
-    // ID пикселя VK Ads (top.mail.ru). Пусто — пиксель не подключается.
-    vkPixelId: '',
-    // Канал или бот с проектами.
-    tgUrl: 'https://t.me/',
-    // Кабинет GO Flow, куда ведёт экран «Проходит».
-    cabinetUrl: '#',
-    // Загружать аналитику только после нажатия «Понятно» в cookie-баннере.
-    analyticsAfterConsent: false
-  };
-
-  /* ================= ДАННЫЕ ================= */
-  // Направления: подмена заголовка, ставки и порядка карточек через ?dir=
-  var DIRS = {
-    all:     { label: 'Все',               noun: 'senior-разработчиков и аналитиков', rate: '6 000', rateTbd: true },
-    python:  { label: 'Python',            noun: 'senior Python-разработчиков',  rate: '6 000', rateTbd: true, stack: ['Python', 'FastAPI', 'Django', 'PostgreSQL', 'Docker', 'Kafka', 'Redis'] },
-    go:      { label: 'Go',                noun: 'senior Go-разработчиков',      rate: '', stack: ['Go', 'PostgreSQL', 'Kafka', 'gRPC', 'Kubernetes', 'Redis'] },
-    dotnet:  { label: '.NET',              noun: 'senior .NET-разработчиков',    rate: '', stack: ['C#', '.NET', 'ASP.NET Core', 'EF Core', 'MS SQL', 'PostgreSQL'] },
-    react:   { label: 'React',             noun: 'senior React-разработчиков',   rate: '', stack: ['React', 'TypeScript', 'Next.js', 'Redux', 'Webpack', 'Jest'] },
-    angular: { label: 'Angular',           noun: 'senior Angular-разработчиков', rate: '', stack: ['Angular', 'TypeScript', 'RxJS', 'NgRx', 'Jest'] },
-    sa:      { label: 'Системный аналитик', noun: 'senior системных аналитиков',  rate: '', stack: ['BPMN', 'UML', 'REST', 'SQL', 'Kafka', 'Confluence'] },
-    ba:      { label: 'Бизнес-аналитик',    noun: 'senior бизнес-аналитиков',     rate: '', stack: ['BPMN', 'User Stories', 'SQL', 'BI', 'Jira'] }
-  };
-
-  // Карточки проектов. ПРИМЕРЫ: реальные запросы подставит заказчик.
-  // match — для карточки в кабинете на первом экране.
-  var PROJECTS = [
-    { dir: 'python',  role: 'Backend-разработчик',     stack: ['Python', 'FastAPI', 'PostgreSQL', 'Docker'], match: [0, 1, 2], load: '', rate: '6 000', rateTbd: true },
-    { dir: 'go',      role: 'Backend-разработчик',     stack: ['Go', 'PostgreSQL', 'Kafka'], match: [0, 1], load: '', rate: '' },
-    { dir: 'dotnet',  role: '.NET-разработчик',        stack: ['C#', '.NET', 'PostgreSQL'], match: [0, 1], load: '', rate: '' },
-    { dir: 'react',   role: 'Frontend-разработчик',    stack: ['React', 'TypeScript', 'Next.js'], match: [0, 1], load: '', rate: '' },
-    { dir: 'angular', role: 'Frontend-разработчик',    stack: ['Angular', 'TypeScript', 'RxJS'], match: [0, 1], load: '', rate: '' },
-    { dir: 'sa',      role: 'Системный аналитик',      stack: ['BPMN', 'UML', 'REST', 'SQL'], match: [0, 2, 3], load: '', rate: '' },
-    { dir: 'ba',      role: 'Бизнес-аналитик',         stack: ['BPMN', 'User Stories', 'SQL'], match: [0, 1], load: '', rate: '' }
-  ];
-
-  // Офферы для A/B: ?v=a|b|c
-  var OFFERS = {
-    a: {
-      title: function (d) { return 'Проекты для ' + d.noun + '. Ставка до ' + rateHtml(d.rate, d.rateTbd, 'ставка') + '&nbsp;₽/час'; },
-      sub: 'Компании публикуют запросы, GO&nbsp;Flow подбирает их под ваш стек. Ставку, стек и формат вы видите до отклика.'
-    },
-    b: {
-      title: function () { return 'Только проекты под ваш стек. Без сотни нерелевантных откликов'; },
-      sub: 'Один раз проходите проверку опыта. Дальше видите запросы, где стек совпадает, и откликаетесь только туда, где условия подходят.'
-    },
-    c: {
-      title: function () { return 'Заказчики приглашают вас на проекты сами'; },
-      sub: 'Подтвердите опыт, укажите стек и ставку. Компании увидят профиль с отметкой «подтверждённый опыт» и пришлют приглашение.'
-    }
-  };
+  var GF = window.GF || {};
+  var CONFIG = GF.config || {};
+  var DIRS = GF.dirs || {};
+  var PAGE = GF.page || { type: 'landing', projects: [] };
+  var PROJECTS = PAGE.projects || [];
 
   /* ================= УТИЛИТЫ ================= */
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
-  function store(kind) { try { return window[kind]; } catch (e) { return null; } }
-  function get(kind, k) { try { var s = store(kind); return s ? s.getItem(k) : null; } catch (e) { return null; } }
-  function set(kind, k, v) { try { var s = store(kind); if (s) s.setItem(k, v); } catch (e) {} }
-  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function tbd(text) { return '<span class="tbd">' + esc(text) + '</span>'; }
-  function rateHtml(rate, isTbd, label) {
-    if (!rate) return tbd(label || 'ставка');
-    return rate.replace(' ', '&nbsp;') + (isTbd ? ' ' + tbd('подтвердить') : '');
-  }
-
+  function get(kind, k) { try { return window[kind].getItem(k); } catch (e) { return null; } }
+  function set(kind, k, v) { try { window[kind].setItem(k, v); } catch (e) {} }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function tbd(t) { return CONFIG.demo ? '<span class="tbd">' + esc(t) + '</span>' : ''; }
   var params = new URLSearchParams(location.search);
 
   /* ================= UTM ================= */
-  var UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'yclid', 'dir', 'v'];
+  var UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'yclid', 'lc'];
   var utm = {};
   (function () {
     var saved = {};
@@ -85,20 +26,10 @@
     var fromUrl = {};
     UTM_KEYS.forEach(function (k) { if (params.get(k)) fromUrl[k] = params.get(k); });
     utm = Object.keys(fromUrl).length ? fromUrl : saved;
-    if (!utm.referrer) utm.referrer = saved.referrer || document.referrer || '';
-    if (!utm.landing_url) utm.landing_url = saved.landing_url || location.href;
+    utm.referrer = saved.referrer || document.referrer || '';
+    utm.landing_url = saved.landing_url || location.href;
     set('sessionStorage', 'gf_utm', JSON.stringify(utm));
   })();
-
-  /* ================= ВАРИАНТ И НАПРАВЛЕНИЕ ================= */
-  var variant = (params.get('v') || '').toLowerCase();
-  if (!OFFERS[variant]) {
-    variant = get('localStorage', 'gf_v');
-    if (!OFFERS[variant]) variant = Math.random() < 0.5 ? 'a' : 'b'; // C запускаем позже, см. ТЗ 2.1
-    set('localStorage', 'gf_v', variant);
-  }
-  var dirKey = (params.get('dir') || '').toLowerCase();
-  if (!DIRS[dirKey]) dirKey = 'all';
 
   /* ================= АНАЛИТИКА ================= */
   var analyticsLoaded = false;
@@ -113,7 +44,7 @@
         k.async = 1; k.src = r; a.parentNode.insertBefore(k, a);
       })(window, document, 'script', 'https://mc.yandex.ru/metrika/tag.js', 'ym');
       window.ym(CONFIG.ymId, 'init', { clickmap: true, trackLinks: true, accurateTrackBounce: true, webvisor: true,
-        params: { variant: variant, dir: dirKey } });
+        params: { variant: PAGE.variant || '', dir: PAGE.dir || '', page: PAGE.type } });
     }
     if (CONFIG.vkPixelId) {
       var _tmr = window._tmr || (window._tmr = []);
@@ -125,237 +56,346 @@
   }
   function goal(name, data) {
     data = data || {};
-    data.variant = variant; data.dir = dirKey;
+    data.variant = PAGE.variant || ''; data.page = PAGE.type;
     if (window.ym && CONFIG.ymId) window.ym(CONFIG.ymId, 'reachGoal', name, data);
     if (window._tmr && CONFIG.vkPixelId) window._tmr.push({ type: 'reachGoal', id: CONFIG.vkPixelId, goal: name });
     if (CONFIG.demo && window.console) console.info('[goal]', name, data);
   }
 
-  /* ================= РЕНДЕР ================= */
+  /* ================= КАРТОЧКИ ================= */
+  var myStack = [];
+  try { myStack = JSON.parse(get('localStorage', 'gf_stack') || '[]') || []; } catch (e) {}
+  function saveStack() { set('localStorage', 'gf_stack', JSON.stringify(myStack)); }
+  function has(s) { return myStack.indexOf(s) > -1; }
+  function matchCount(p) { return p.stack.filter(has).length; }
+
   function cardHtml(p, opts) {
     opts = opts || {};
-    var chips = p.stack.map(function (s, i) {
-      var m = opts.app && p.match && p.match.indexOf(i) > -1;
-      return '<span class="chip' + (m ? ' is-match' : '') + '">' + esc(s) + '</span>';
+    var m = matchCount(p);
+    var showMatch = myStack.length > 0;
+    var chips = p.stack.map(function (s) {
+      return '<span class="chip' + (showMatch && has(s) ? ' is-match' : '') + '">' + esc(s) + '</span>';
+    }).join('') + (p.stackNice || []).slice(0, 2).map(function (s) {
+      return '<span class="chip chip--nice' + (showMatch && has(s) ? ' is-match' : '') + '" title="Будет плюсом">+ ' + esc(s) + '</span>';
     }).join('');
-    var matchLine = opts.app && p.match
-      ? '<span class="match">совпадает ' + p.match.length + ' из ' + p.stack.length + '</span>' : '';
-    var load = p.load ? esc(p.load) : tbd('занятость');
-    var head = '<div class="pcard__head"><div>' +
-      (!opts.app && CONFIG.demo ? '<div class="pcard__tag">Пример карточки</div>' : '') +
-      '<div class="pcard__role">' + esc(p.role) + '</div></div><span class="grade">Senior</span></div>';
-    return head +
-      '<div class="stack">' + chips + '</div>' + matchLine +
-      '<div class="meta"><span>Удалённо</span><span>' + load + '</span></div>' +
-      '<div class="pcard__foot"><div class="rate">' + (p.rate ? 'до ' + p.rate.replace(' ', '&nbsp;') + ' <small>₽/час</small>' + (p.rateTbd ? tbd('подтвердить') : '') : 'до … <small>₽/час</small>' + tbd('ставка')) + '</div>' +
-      (opts.app ? '<span class="btn btn--green">Откликнуться</span>'
-                : '<a class="btn btn--green" href="#apply" data-card="' + p.dir + '">Откликнуться</a>') +
-      '</div>';
+    var meta = [p.format, p.workload, p.duration].filter(Boolean).map(esc);
+    if (!p.workload) meta.push(tbd('занятость'));
+    var rate = p.rate ? esc(p.rate) + (p.isExample ? tbd('пример') : '') : 'Ставка по запросу' + tbd('уточнить');
+    if (opts.app) {
+      return '<a class="pcard pcard--app" href="' + esc(p.url) + '" data-card-open="' + p.id + '">' +
+        '<div class="pcard__head"><span class="pcard__role">' + esc(p.role) + '</span><span class="grade">' + esc(p.grade) + '</span></div>' +
+        '<div class="stack">' + p.stack.map(function (s, i) { return '<span class="chip' + (i < Math.max(1, p.stack.length - 1) ? ' is-match' : '') + '">' + esc(s) + '</span>'; }).join('') + '</div>' +
+        '<span class="matchline">совпадает ' + Math.max(1, p.stack.length - 1) + ' из ' + p.stack.length + '</span>' +
+        '<div class="pcard__foot"><div class="rate">' + rate + '</div><span class="btn btn--green">Откликнуться</span></div></a>';
+    }
+    return '<article class="pcard' + (showMatch && m === p.stack.length && m > 0 ? ' is-top' : '') + '">' +
+      '<div class="pcard__top">' +
+        '<div class="pcard__tags">' + (p.isExample && CONFIG.demo ? '<span class="tag tag--warn">Пример</span>' : '') +
+          (p.domain ? '<span class="tag">' + esc(p.domain) + '</span>' : '') + '</div>' +
+        '<span class="grade">' + esc(p.grade) + '</span>' +
+      '</div>' +
+      '<h3 class="pcard__title"><a href="' + esc(p.url) + '" data-card-open="' + p.id + '">' + esc(p.role) + '</a></h3>' +
+      '<div class="pcard__rate' + (p.rate ? '' : ' is-empty') + '">' + rate + '</div>' +
+      (p.summary ? '<p class="pcard__sum">' + esc(p.summary) + '</p>' : '') +
+      '<div class="stack">' + chips + '</div>' +
+      (showMatch ? '<span class="matchline' + (m ? '' : ' is-zero') + '">совпадает ' + m + ' из ' + p.stack.length + '</span>' : '') +
+      (p.tasks && p.tasks.length ? '<ul class="pcard__tasks">' + p.tasks.slice(0, 2).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' : '') +
+      '<div class="meta">' + meta.map(function (x) { return '<span>' + x + '</span>'; }).join('') + '</div>' +
+      '<div class="pcard__foot">' +
+        '<a class="pcard__more" href="' + esc(p.url) + '" data-card-open="' + p.id + '">Подробнее</a>' +
+        '<button class="btn btn--green" type="button" data-apply="' + p.id + '">Откликнуться</button>' +
+      '</div>' +
+    '</article>';
   }
 
-  function renderHero() {
-    var d = DIRS[dirKey];
-    var o = OFFERS[variant];
-    $('#heroTitle').innerHTML = o.title(d);
-    $('#heroSub').innerHTML = o.sub;
-    if (dirKey !== 'all') $('#heroStackBadge').textContent = d.stack.slice(0, 4).join(' · ');
-    var p = PROJECTS.filter(function (x) { return x.dir === dirKey; })[0] || PROJECTS[0];
-    $('#heroCard').innerHTML = cardHtml(p, { app: true });
+  var filter = PAGE.dir || 'all';
+  function visibleProjects() {
+    var list = filter === 'all' ? PROJECTS.slice() : PROJECTS.filter(function (p) { return p.direction === filter; });
+    if (myStack.length) list.sort(function (a, b) { return (matchCount(b) / b.stack.length) - (matchCount(a) / a.stack.length); });
+    return list;
   }
 
-  var currentFilter = dirKey;
   function renderFilters() {
     var box = $('#filters');
-    box.innerHTML = Object.keys(DIRS).map(function (k) {
-      return '<button type="button" role="tab" data-f="' + k + '" aria-selected="' + (k === currentFilter) + '">' + esc(DIRS[k].label) + '</button>';
+    if (!box) return;
+    var counts = {};
+    PROJECTS.forEach(function (p) { counts[p.direction] = (counts[p.direction] || 0) + 1; });
+    var keys = ['all'].concat(Object.keys(DIRS));
+    box.innerHTML = keys.map(function (k) {
+      var label = k === 'all' ? 'Все' : DIRS[k].label;
+      var n = k === 'all' ? PROJECTS.length : (counts[k] || 0);
+      return '<button type="button" role="tab" data-f="' + k + '" aria-selected="' + (k === filter) + '">' + esc(label) + ' <span>' + n + '</span></button>';
     }).join('');
-    box.addEventListener('click', function (e) {
-      var b = e.target.closest('button[data-f]');
-      if (!b) return;
-      currentFilter = b.getAttribute('data-f');
-      $$('button', box).forEach(function (x) { x.setAttribute('aria-selected', String(x === b)); });
-      renderCards();
-    });
+  }
+  function setFilter(k, scroll) {
+    filter = k;
+    $$('#filters button').forEach(function (b) { b.setAttribute('aria-selected', String(b.getAttribute('data-f') === k)); });
+    $$('[data-pick-dir]').forEach(function (b) { b.classList.toggle('is-on', b.getAttribute('data-pick-dir') === k); });
+    renderStackChips();
+    renderCards();
+    if (scroll) $('#projects').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  function renderStackChips() {
+    var box = $('#stackChips');
+    if (!box) return;
+    var pool = [];
+    var src = filter === 'all' ? PROJECTS : PROJECTS.filter(function (p) { return p.direction === filter; });
+    src.forEach(function (p) { p.stack.concat(p.stackNice || []).forEach(function (s) { if (pool.indexOf(s) < 0) pool.push(s); }); });
+    if (filter !== 'all' && DIRS[filter]) DIRS[filter].stack.forEach(function (s) { if (pool.indexOf(s) < 0) pool.push(s); });
+    box.innerHTML = pool.slice(0, 18).map(function (s) {
+      return '<button type="button" aria-pressed="' + has(s) + '">' + esc(s) + '</button>';
+    }).join('') + (myStack.length ? '<button type="button" class="stackbar__reset" data-reset>Сбросить</button>' : '');
   }
   function renderCards() {
-    var list = currentFilter === 'all' ? PROJECTS.slice() : PROJECTS.filter(function (p) { return p.dir === currentFilter; });
-    $('#cards').innerHTML = list.map(function (p) { return '<article class="pcard">' + cardHtml(p) + '</article>'; }).join('');
-    $('#cardsEmpty').hidden = list.length > 0;
+    var box = $('#cards');
+    if (!box) return;
+    var list = PAGE.type === 'landing' ? visibleProjects() : PROJECTS;
+    box.innerHTML = list.map(function (p) { return cardHtml(p); }).join('');
+    var empty = $('#cardsEmpty');
+    if (empty) empty.hidden = list.length > 0;
   }
+  function renderHero() {
+    var box = $('#heroCard');
+    if (!box) return;
+    var src = PAGE.dir ? PROJECTS.filter(function (p) { return p.direction === PAGE.dir; }) : PROJECTS;
+    var p = src[0] || PROJECTS[0];
+    if (!p) { box.innerHTML = '<p class="app__empty">Скоро здесь появятся проекты</p>'; return; }
+    box.innerHTML = cardHtml(p, { app: true });
+    var rest = PROJECTS.length - 1;
+    var more = $('#heroMore');
+    if (more && rest > 0) more.innerHTML = '<a href="#projects">+ ещё ' + rest + ' в подборке →</a>';
+  }
+
+  document.addEventListener('click', function (e) {
+    var f = e.target.closest('#filters button[data-f]');
+    if (f) { setFilter(f.getAttribute('data-f')); goal('spec_filter', { dir: f.getAttribute('data-f') }); return; }
+    var pick = e.target.closest('[data-pick-dir]');
+    if (pick && PAGE.type === 'landing') {
+      e.preventDefault();
+      var d = pick.getAttribute('data-pick-dir');
+      setFilter(filter === d ? 'all' : d, true);
+      goal('spec_hero_pick', { dir: d });
+      return;
+    }
+    var chip = e.target.closest('#stackChips button');
+    if (chip) {
+      if (chip.hasAttribute('data-reset')) myStack = [];
+      else {
+        var s = chip.textContent, i = myStack.indexOf(s);
+        if (i > -1) myStack.splice(i, 1); else myStack.push(s);
+      }
+      saveStack(); renderStackChips(); renderCards();
+      goal('spec_stack_pick');
+      return;
+    }
+    var ap = e.target.closest('[data-apply]');
+    if (ap) {
+      var p = PROJECTS.filter(function (x) { return String(x.id) === ap.getAttribute('data-apply'); })[0];
+      if (p) { setFormProject(p); goal('spec_project_apply_click', { project: p.slug }); }
+      $('#apply').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    var op = e.target.closest('[data-card-open]');
+    if (op) goal('spec_project_open', { id: op.getAttribute('data-card-open') });
+  });
+
+  /* ============ Проверка стека на странице проекта ============ */
+  (function () {
+    var box = $('#matchPick');
+    if (!box || !PAGE.project) return;
+    var p = PAGE.project;
+    function draw() {
+      box.innerHTML = p.stackAll.map(function (s) { return '<button type="button" aria-pressed="' + has(s) + '">' + esc(s) + '</button>'; }).join('');
+      var m = matchCount(p);
+      var res = $('#matchRes');
+      if (!myStack.length) { res.textContent = ''; return; }
+      res.innerHTML = '<b>Совпадает ' + m + ' из ' + p.stack.length + '</b> обязательных. ' +
+        (m === p.stack.length ? 'Отличный матч — откликайтесь.' : m >= p.stack.length - 1 ? 'Хороший матч, остальное можно обсудить с заказчиком.' : 'Совпадение слабое — посмотрите и другие проекты.');
+    }
+    box.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (!b) return;
+      var s = b.textContent, i = myStack.indexOf(s);
+      if (i > -1) myStack.splice(i, 1); else myStack.push(s);
+      saveStack(); draw(); renderCards();
+    });
+    draw();
+  })();
 
   /* ================= ФОРМА ================= */
   var form = $('#form');
-  var step1 = $('#step1'), step2 = $('#step2');
-  var picked = [];
+  var token = '';
+  var picked = myStack.slice();
+  if (form) initForm();
 
-  function renderStackPick(dir) {
-    var d = DIRS[dir] || DIRS.python;
-    var list = d.stack || [];
-    picked = picked.filter(function (s) { return list.indexOf(s) > -1; });
-    $('#stackPick').innerHTML = list.map(function (s) {
-      return '<button type="button" aria-pressed="' + (picked.indexOf(s) > -1) + '">' + esc(s) + '</button>';
-    }).join('');
+  function setFormProject(p) {
+    var ctx = $('#formCtx');
+    $('#fProject').value = p ? p.id : '';
+    if (!ctx) return;
+    ctx.hidden = !p;
+    if (p) {
+      $('#formCtxTitle').textContent = p.title;
+      $('#formCtxRate').textContent = p.rate || '';
+      $('#formCtxClear').hidden = PAGE.type === 'project';
+      var sel = $('#fDirection');
+      if (sel && !sel.value) sel.value = p.direction;
+      p.stack.forEach(function (s) { if (picked.indexOf(s) < 0 && has(s)) picked.push(s); });
+    }
   }
-  $('#stackPick').addEventListener('click', function (e) {
-    var b = e.target.closest('button');
-    if (!b) return;
-    var s = b.textContent, i = picked.indexOf(s);
-    if (i > -1) picked.splice(i, 1); else picked.push(s);
-    b.setAttribute('aria-pressed', String(i < 0));
-  });
 
-  function setProgress(n) {
-    $('#progressLabel').textContent = 'Шаг ' + n + ' из 2';
-    $('#progressBar').style.width = (n * 50) + '%';
-  }
-  function markBad(el, bad) {
-    var t = el.closest('.seg') || el.closest('.check') || el;
-    t.classList.toggle('is-bad', bad);
-  }
-  function validate(fs, errEl) {
-    var ok = true, firstBad = null;
-    var radiosSeen = {};
-    $$('[required]', fs).forEach(function (el) {
-      var bad;
-      if (el.type === 'radio') {
-        if (radiosSeen[el.name]) return;
-        radiosSeen[el.name] = true;
-        bad = !form.querySelector('input[name="' + el.name + '"]:checked');
-      } else if (el.type === 'checkbox') {
-        bad = !el.checked;
-      } else if (el.name === 'contact') {
-        var v = el.value.trim();
-        bad = !(/^@?[A-Za-z0-9_]{5,32}$/.test(v) || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));
-      } else if (el.type === 'url') {
-        bad = !/^(https?:\/\/)?[^\s.]+\.[^\s]{2,}/i.test(el.value.trim());
-      } else {
-        bad = !String(el.value).trim();
-      }
-      markBad(el, bad);
-      if (bad) { ok = false; firstBad = firstBad || el; }
+  function initForm() {
+    var step1 = $('#step1'), step2 = $('#step2');
+
+    function renderStackPick(dir) {
+      var list = (DIRS[dir] && DIRS[dir].stack) ? DIRS[dir].stack.slice() : [];
+      picked.forEach(function (s) { if (list.indexOf(s) < 0) list.push(s); });
+      $('#stackPick').innerHTML = list.map(function (s) {
+        return '<button type="button" aria-pressed="' + (picked.indexOf(s) > -1) + '">' + esc(s) + '</button>';
+      }).join('');
+    }
+    $('#stackPick').addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (!b) return;
+      var s = b.textContent, i = picked.indexOf(s);
+      if (i > -1) picked.splice(i, 1); else picked.push(s);
+      b.setAttribute('aria-pressed', String(i < 0));
     });
-    errEl.hidden = ok;
-    if (!ok) {
-      errEl.textContent = 'Заполните отмеченные поля.';
-      if (firstBad.focus) firstBad.focus({ preventScroll: false });
+    var clear = $('#formCtxClear');
+    if (clear) clear.addEventListener('click', function () { setFormProject(null); });
+
+    function setProgress(n) {
+      $('#progressLabel').textContent = 'Шаг ' + n + ' из 2';
+      $('#progressBar').style.width = (n * 50) + '%';
     }
-    return ok;
-  }
-  form.addEventListener('change', function (e) { markBad(e.target, false); });
-  form.addEventListener('input', function (e) { markBad(e.target, false); });
-
-  function data() {
-    var fd = new FormData(form), out = {};
-    fd.forEach(function (v, k) { out[k] = v; });
-    out.consent_pd = !!form.consent_pd.checked;
-    out.consent_ads = !!form.consent_ads.checked;
-    out.stack = picked.concat(String(out.stack_extra || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean));
-    delete out.stack_extra;
-    out.ym_client_id = '';
-    try { if (window.ym && CONFIG.ymId) window.ym(CONFIG.ymId, 'getClientID', function (id) { out.ym_client_id = id; }); } catch (e) {}
-    Object.keys(utm).forEach(function (k) { out[k === 'v' ? 'utm_v' : k] = utm[k]; });
-    out.variant = variant;
-    out.page_dir = dirKey;
-    out.submitted_at = new Date().toISOString();
-    return out;
-  }
-
-  function send(stage, payload) {
-    payload.stage = stage;
-    if (!CONFIG.formEndpoint) {
-      if (CONFIG.demo && window.console) console.info('[form:' + stage + ']', payload);
-      return Promise.resolve();
+    function markBad(el, bad) {
+      var t = el.closest('.seg') || el.closest('.check') || el;
+      t.classList.toggle('is-bad', bad);
     }
-    return fetch(CONFIG.formEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      keepalive: true
-    }).catch(function () {});
-  }
-
-  // Скоринг (дублировать на бэкенде): 0 отклонений — проходит, 1 — ручная проверка, 2+ — нет.
-  var DEV = {
-    handson: { '18-24': 0, '12-17': 1, 'lt12': 2 },
-    tenure:  { '36+': 0, '18-35': 0, '12-17': 1, 'lt12': 2 },
-    legal:   { 'npd_ru': 0, 'ip_ru': 0, 'other': 1, 'none': 1 },
-    overlap: { 'full': 0, '6+': 0, '4-5': 1, 'lt4': 2 }
-  };
-  function score(d) {
-    if (d.years === 'lt3' || d.years === '3-5') return 'fail';
-    var n = 0;
-    Object.keys(DEV).forEach(function (k) { n += DEV[k][d[k]] || 0; });
-    return n === 0 ? 'pass' : n === 1 ? 'border' : 'fail';
-  }
-
-  function showResult(res) {
-    form.hidden = true;
-    $('#resPass').hidden = res !== 'pass';
-    $('#resBorder').hidden = res !== 'border';
-    $('#resFail').hidden = res !== 'fail';
-    goal('spec_score_' + res);
-    $('#formbox').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  $('#next1').addEventListener('click', function () {
-    if (!validate(step1, $('#err1'))) return;
-    var d = data();
-    goal('spec_form_step1');
-    send('step1', d);
-    if (d.years === 'lt3' || d.years === '3-5') {
-      $('#failText').textContent = 'Сейчас пилот работает только со специалистами, у которых 6+ лет на основном стеке. Если критерии расширятся, напишем первыми. А пока запросы с другими требованиями публикуем в Telegram.';
-      showResult('fail');
-      return;
+    function validate(fs, errEl) {
+      var ok = true, firstBad = null, seen = {};
+      $$('[required]', fs).forEach(function (el) {
+        var bad;
+        if (el.type === 'radio') {
+          if (seen[el.name]) return;
+          seen[el.name] = true;
+          bad = !form.querySelector('input[name="' + el.name + '"]:checked');
+        } else if (el.type === 'checkbox') {
+          bad = !el.checked;
+        } else if (el.name === 'contact') {
+          var v = el.value.trim();
+          bad = !(/^@?[A-Za-z0-9_]{5,32}$/.test(v) || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));
+        } else if (el.type === 'url') {
+          bad = !/^(https?:\/\/)?[^\s.]+\.[^\s]{2,}/i.test(el.value.trim());
+        } else {
+          bad = !String(el.value).trim();
+        }
+        markBad(el, bad);
+        if (bad) { ok = false; firstBad = firstBad || el; }
+      });
+      errEl.hidden = ok;
+      if (!ok) { errEl.textContent = 'Заполните отмеченные поля.'; if (firstBad.focus) firstBad.focus(); }
+      return ok;
     }
-    renderStackPick(form.direction.value);
-    step1.hidden = true; step2.hidden = false;
-    setProgress(2);
-    $('#formbox').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-  $('#back2').addEventListener('click', function () {
-    step2.hidden = true; step1.hidden = false; setProgress(1);
-  });
-  form.addEventListener('submit', function (e) {
-    e.preventDefault();
-    if (!validate(step2, $('#err2'))) return;
-    var d = data();
-    var res = score(d);
-    d.score = res;
-    var btn = $('#submit2');
-    btn.disabled = true; btn.textContent = 'Отправляем…';
-    goal('spec_form_submit');
-    send('step2', d).then(function () { showResult(res); });
-  });
+    form.addEventListener('change', function (e) { markBad(e.target, false); });
+    form.addEventListener('input', function (e) { markBad(e.target, false); });
 
-  /* ================= ССЫЛКИ, CTA, СТИКИ ================= */
+    function payload(stage) {
+      var fd = new FormData(form), out = {};
+      fd.forEach(function (v, k) { out[k] = v; });
+      out.stage = stage;
+      out.token = token;
+      out.consent_pd = form.consent_pd.checked;
+      out.consent_ads = form.consent_ads.checked;
+      out.stack = picked.concat(String(out.stack_extra || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean));
+      delete out.stack_extra;
+      Object.keys(utm).forEach(function (k) { out[k] = utm[k]; });
+      out.variant = PAGE.variant || '';
+      out.page_dir = PAGE.dir || (PAGE.project ? PAGE.project.direction : '');
+      return out;
+    }
+    function send(data) {
+      if (!CONFIG.apiApply) return Promise.resolve({ ok: true, demo: true });
+      return fetch(CONFIG.apiApply, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data), credentials: 'same-origin'
+      }).then(function (r) { return r.json(); });
+    }
+    function busy(btn, on, text) {
+      btn.disabled = on;
+      if (on) { btn.dataset.text = btn.innerHTML; btn.textContent = text || 'Отправляем…'; }
+      else if (btn.dataset.text) btn.innerHTML = btn.dataset.text;
+    }
+    function fail(errEl) {
+      errEl.hidden = false;
+      errEl.innerHTML = 'Не получилось отправить. Проверьте интернет и попробуйте ещё раз.';
+    }
+    function showResult(res) {
+      form.hidden = true;
+      var ctx = $('#formCtx'); if (ctx) ctx.hidden = true;
+      $('#resPass').hidden = res !== 'pass';
+      $('#resBorder').hidden = res !== 'border';
+      $('#resFail').hidden = res !== 'fail';
+      goal('spec_score_' + res);
+      $('#formbox').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    $('#next1').addEventListener('click', function () {
+      if (!validate(step1, $('#err1'))) return;
+      var btn = this;
+      busy(btn, true, 'Сохраняем…');
+      send(payload('step1')).then(function (r) {
+        busy(btn, false);
+        if (!r || !r.ok) return fail($('#err1'));
+        token = r.token || '';
+        goal('spec_form_step1');
+        if (r.score === 'fail') {
+          $('#failText').textContent = 'Сейчас пилот работает только со специалистами, у которых 6+ лет на основном стеке. Если критерии расширятся, напишем первыми. А пока запросы с другими требованиями публикуем в Telegram.';
+          showResult('fail');
+          return;
+        }
+        renderStackPick(form.direction.value);
+        step1.hidden = true; step2.hidden = false;
+        setProgress(2);
+        $('#formbox').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }).catch(function () { busy(btn, false); fail($('#err1')); });
+    });
+    $('#back2').addEventListener('click', function () { step2.hidden = true; step1.hidden = false; setProgress(1); });
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (!validate(step2, $('#err2'))) return;
+      var btn = $('#submit2');
+      busy(btn, true);
+      send(payload('step2')).then(function (r) {
+        busy(btn, false);
+        if (!r || !r.ok) return fail($('#err2'));
+        goal('spec_form_submit');
+        showResult(r.score || 'border');
+      }).catch(function () { busy(btn, false); fail($('#err2')); });
+    });
+    $('#cabinetLink').href = CONFIG.cabinetUrl || '#';
+  }
+
+  /* ================= ССЫЛКИ, СТИКИ, COOKIE ================= */
   function tgHref(place) {
-    var u = CONFIG.tgUrl;
+    var u = CONFIG.tgUrl || 'https://t.me/';
     return u + (u.indexOf('?') > -1 ? '&' : '?') + 'start=' + encodeURIComponent((utm.utm_campaign || 'landing') + '_' + place);
   }
   $$('[data-tg]').forEach(function (a) {
     var place = a.getAttribute('data-tg');
-    a.href = tgHref(place);
-    a.target = '_blank'; a.rel = 'noopener';
+    a.href = tgHref(place); a.target = '_blank'; a.rel = 'noopener';
     a.addEventListener('click', function () { goal('spec_tg_click', { place: place }); });
   });
   document.addEventListener('click', function (e) {
     var c = e.target.closest('[data-cta]');
     if (c) goal('spec_cta_click', { place: c.getAttribute('data-cta') });
-    var k = e.target.closest('[data-card]');
-    if (k) {
-      var d = k.getAttribute('data-card');
-      goal('spec_project_card_click', { card_dir: d });
-      if (!form.hidden && !step1.hidden) form.direction.value = d;
-    }
   });
   $$('.faq details').forEach(function (d, i) {
     d.addEventListener('toggle', function () { if (d.open) goal('spec_faq_open', { q: i + 1 }); });
   });
-  $('#cabinetLink').href = CONFIG.cabinetUrl;
 
-  // Стики-кнопка на мобильных: после первого экрана и пока не видно анкету.
   var sticky = $('#sticky');
-  if ('IntersectionObserver' in window) {
+  var heroEnd = $('.hero__cta') || $('.pbox .btn');
+  if (sticky && heroEnd && 'IntersectionObserver' in window) {
     var heroOut = false, applyIn = false;
     var upd = function () {
       var on = heroOut && !applyIn;
@@ -363,28 +403,36 @@
       sticky.setAttribute('aria-hidden', String(!on));
       $('a', sticky).tabIndex = on ? 0 : -1;
     };
-    new IntersectionObserver(function (es) { heroOut = !es[0].isIntersecting; upd(); }).observe($('.hero__cta'));
-    new IntersectionObserver(function (es) { applyIn = es[0].isIntersecting; upd(); }, { threshold: 0.05 }).observe($('#apply'));
+    new IntersectionObserver(function (es) { heroOut = !es[0].isIntersecting && es[0].boundingClientRect.top < 0; upd(); }).observe(heroEnd);
+    var ap = $('#apply');
+    if (ap) new IntersectionObserver(function (es) { applyIn = es[0].isIntersecting; upd(); }, { threshold: 0.05 }).observe(ap);
+    // На лендинге: до блока проектов стики ведёт к проектам, внутри и после — к анкете.
+    var pr = $('#projects'), sb = $('#stickyBtn');
+    if (pr && sb) {
+      var label = 'Смотреть проекты' + (PROJECTS.length ? ' · ' + PROJECTS.length : '');
+      var onScroll = function () {
+        var past = pr.getBoundingClientRect().top < window.innerHeight * 0.3;
+        sb.href = past ? '#apply' : '#projects';
+        sb.textContent = past ? 'Зарегистрироваться — 2 минуты' : label;
+      };
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    }
   }
 
-  /* ================= COOKIE ================= */
   var cookie = $('#cookie');
-  if (get('localStorage', 'gf_cookie') !== '1') cookie.hidden = false;
+  if (cookie) {
+    if (get('localStorage', 'gf_cookie') !== '1') cookie.hidden = false;
+    $('#cookieOk').addEventListener('click', function () {
+      set('localStorage', 'gf_cookie', '1'); cookie.hidden = true; loadAnalytics();
+    });
+  }
   if (!CONFIG.analyticsAfterConsent || get('localStorage', 'gf_cookie') === '1') loadAnalytics();
-  $('#cookieOk').addEventListener('click', function () {
-    set('localStorage', 'gf_cookie', '1');
-    cookie.hidden = true;
-    loadAnalytics();
-  });
 
   /* ================= СТАРТ ================= */
-  if (CONFIG.demo) { document.body.classList.add('is-demo'); $('#demoBar').hidden = false; }
-  if (dirKey !== 'all') form.direction.value = DIRS[dirKey] ? dirKey : '';
-  renderHero();
   renderFilters();
+  renderStackChips();
   renderCards();
-  var hiddenBox = $('#hidden');
-  hiddenBox.innerHTML = UTM_KEYS.concat(['referrer', 'landing_url']).map(function (k) {
-    return '<input type="hidden" name="h_' + k + '" value="' + esc(utm[k] || '') + '">';
-  }).join('');
+  renderHero();
+  if (PAGE.type === 'project' && PAGE.project) goal('spec_project_view', { project: PAGE.project.slug });
 })();
