@@ -32,11 +32,13 @@ return [
     'notify' => ['tg_bot_token' => '', 'tg_chat_id' => ''],
 
     // Синхронизация проектов с платформой GO Flow (см. README → «API платформы»).
-    'platform' => ['enabled' => false, 'url' => '', 'token' => '', 'timeout' => 15],
+    'platform' => ['enabled' => false, 'url' => '', 'token' => '', 'timeout' => 15,
+        // Создание аккаунта на платформе для прошедших скоринг (ответ: {"login_url": "…"}).
+        'register_url' => ''],
 
     // Для подвала и пометки «Реклама» в постах.
     'operator' => ['name' => 'GO Digital', 'ad_name' => 'ООО «КлинЭнджин»', 'inn' => '1615013503'],
 
-    // Переопределение правил скоринга (см. lib/scoring.php и docs/scoring-brief.md).
+    // Переопределение правил скоринга (см. lib/scoring.php и docs/GO-Flow-бриф-скоринг.docx).
     // 'scoring' => ['border_max' => 1],
 ];

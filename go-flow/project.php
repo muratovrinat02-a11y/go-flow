@@ -27,7 +27,30 @@ $ogDesc = trim(implode(' · ', array_filter([
     $p['format'], $p['workload'], $p['duration'],
 ])) . '. Отклик за 2 минуты на GO Flow.');
 
-view_head($ogTitle . ' — GO Flow', $ogDesc, ['title' => $ogTitle, 'description' => $ogDesc, 'url' => project_url($p, true)]);
+$jsonld = null;
+if ($isOpen) {
+    $descHtml = '<p>' . h($p['summary']) . '</p>' . ($p['description'] ? '<p>' . nl2br(h($p['description'])) . '</p>' : '');
+    foreach (['Задачи' => $p['tasks_list'], 'Требования' => $p['requirements_list'], 'Условия' => $p['conditions_list']] as $t => $items) {
+        if ($items) $descHtml .= '<p><b>' . $t . '</b></p><ul><li>' . implode('</li><li>', array_map('h', $items)) . '</li></ul>';
+    }
+    $jsonld = [
+        '@context' => 'https://schema.org', '@type' => 'JobPosting',
+        'title' => $p['title'], 'description' => $descHtml,
+        'datePosted' => date('Y-m-d', strtotime($p['published_at'] ?: $p['created_at'])),
+        'validThrough' => date('Y-m-d', strtotime(($p['published_at'] ?: $p['created_at']) . ' +60 days')),
+        'employmentType' => 'CONTRACTOR', 'jobLocationType' => 'TELECOMMUTE', 'directApply' => true,
+        'hiringOrganization' => ['@type' => 'Organization', 'name' => cfg('operator.name', 'GO Digital'), 'sameAs' => 'https://godigital.rocks/'],
+        'skills' => implode(', ', array_merge($p['stack_required'], $p['stack_nice'])),
+        'identifier' => ['@type' => 'PropertyValue', 'name' => 'GO Flow', 'value' => $p['slug']],
+    ];
+    if ($p['rate_min'] || $p['rate_max']) {
+        $jsonld['baseSalary'] = ['@type' => 'MonetaryAmount', 'currency' => 'RUB', 'value' => array_filter([
+            '@type' => 'QuantitativeValue', 'unitText' => 'HOUR',
+            'minValue' => $p['rate_min'] ? (int)$p['rate_min'] : null, 'maxValue' => $p['rate_max'] ? (int)$p['rate_max'] : null,
+        ])];
+    }
+}
+view_head($ogTitle . ' — GO Flow', $ogDesc, ['title' => $ogTitle, 'description' => $ogDesc, 'url' => project_url($p, true), 'jsonld' => $jsonld]);
 view_header(false);
 
 $meta = array_filter([
@@ -47,7 +70,7 @@ $sections = [
 <main>
 <section class="phero">
   <div class="wrap">
-    <a class="phero__back" href="<?= h(url('#projects')) ?>">← Все проекты</a>
+    <nav class="crumbs" aria-label="Навигация"><a href="<?= h(url('')) ?>">Все проекты</a> / <a href="<?= h(dir_url($p['direction'])) ?>"><?= h($p['direction_label']) ?></a></nav>
     <?php if (!$isOpen): ?>
       <div class="phero__closed">Набор на этот проект закрыт. Ниже — похожие открытые проекты.</div>
     <?php endif; ?>

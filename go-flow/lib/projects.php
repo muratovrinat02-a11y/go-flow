@@ -248,3 +248,40 @@ function platform_sync(): array
     }
     return $stats;
 }
+
+/* ============ Передача прошедших скоринг на платформу ============
+
+   Контракт (предложение, см. бриф раздел «Доступ в кабинет»):
+   POST {platform.register_url}  Authorization: Bearer {platform.token}
+   Тело: анкета в JSON (contact, direction, years, stack, handson, tenure, legal, overlap, rate,
+         workload, resume, project_external_id, utm_*).
+   Ответ: {"login_url": "https://flow…/magic/abc"} — одноразовая ссылка входа в кабинет.
+   Без настройки или при ошибке возвращаем общий cabinet_url. */
+
+function platform_register(int $appId): ?string
+{
+    $fallback = (string)cfg('cabinet_url', '') ?: null;
+    $url = (string)cfg('platform.register_url', '');
+    if ($url === '') return $fallback;
+    $st = db()->prepare('SELECT a.*, p.external_id project_external_id FROM applications a LEFT JOIN projects p ON p.id = a.project_id WHERE a.id = ?');
+    $st->execute([$appId]);
+    $a = $st->fetch();
+    if (!$a) return $fallback;
+    $body = array_intersect_key($a, array_flip(['contact', 'direction', 'years', 'handson', 'tenure', 'legal', 'overlap', 'rate', 'workload', 'resume', 'project_external_id', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content']));
+    $body['stack'] = json_decode($a['stack'] ?: '[]', true) ?: [];
+    $body['application_id'] = $appId;
+    $ctx = stream_context_create(['http' => [
+        'method' => 'POST', 'timeout' => 6, 'ignore_errors' => true,
+        'header' => "Content-Type: application/json\r\nAuthorization: Bearer " . cfg('platform.token', '') . "\r\n",
+        'content' => json_encode($body, JSON_UNESCAPED_UNICODE),
+    ]]);
+    $raw = @file_get_contents($url, false, $ctx);
+    $json = $raw ? json_decode($raw, true) : null;
+    $login = is_array($json) ? (string)($json['login_url'] ?? '') : '';
+    if ($login !== '' && preg_match('#^https://#', $login)) {
+        db()->prepare("UPDATE applications SET notes = TRIM(notes || char(10) || ?) WHERE id = ?")->execute(['Аккаунт на платформе создан ' . date('d.m.Y H:i'), $appId]);
+        return $login;
+    }
+    db()->prepare("UPDATE applications SET notes = TRIM(notes || char(10) || ?) WHERE id = ?")->execute(['Не удалось создать аккаунт на платформе ' . date('d.m.Y H:i'), $appId]);
+    return $fallback;
+}

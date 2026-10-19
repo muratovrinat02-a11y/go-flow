@@ -6,6 +6,8 @@ DirectoryIndex index.php
   RewriteEngine On
   RewriteRule ^p/([a-z0-9-]+)/?$ project.php?slug=$1 [L,QSA]
   RewriteRule ^r/([a-z0-9]+)/?$ r.php?c=$1 [L,QSA]
+  RewriteRule ^(python|go|dotnet|react|angular|sa|ba)/?$ index.php?dir=$1 [L,QSA]
+  RewriteRule ^sitemap\.xml$ sitemap.php [L]
   RewriteRule ^admin$ admin/ [R=301,L]
   RewriteRule ^(lib|data)(/|$) - [F,L]
   RewriteRule ^(config|config\.sample|sync)\.php$ - [F,L]

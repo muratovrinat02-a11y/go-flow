@@ -369,6 +369,9 @@
         busy(btn, false);
         if (!r || !r.ok) return fail($('#err2'));
         goal('spec_form_submit');
+        if (r.cabinetUrl) $('#cabinetLink').href = r.cabinetUrl;
+        var pp = $('#passProject'), ctxT = $('#formCtxTitle');
+        if (pp && ctxT && $('#fProject').value) pp.textContent = ', в том числе на «' + ctxT.textContent + '»';
         showResult(r.score || 'border');
       }).catch(function () { busy(btn, false); fail($('#err2')); });
     });

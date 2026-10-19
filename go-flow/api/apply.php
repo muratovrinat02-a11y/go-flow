@@ -87,4 +87,7 @@ if ($existing) {
 
 if ($stage === 'step2' || $score === 'fail') notify_application($id);
 
-json_out(['ok' => true, 'token' => $token, 'score' => $score ?: null]);
+$cabinet = null;
+if ($stage === 'step2' && $score === 'pass') $cabinet = platform_register($id);
+
+json_out(['ok' => true, 'token' => $token, 'score' => $score ?: null, 'cabinetUrl' => $cabinet]);

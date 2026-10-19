@@ -69,6 +69,12 @@ function project_url(array $p, bool $absolute = false): string
     return $absolute ? base_url() . '/' . $path : url($path);
 }
 
+function dir_url(string $dir, bool $absolute = false): string
+{
+    $path = cfg('pretty_urls', true) ? $dir . '/' : '?dir=' . rawurlencode($dir);
+    return $absolute ? base_url() . '/' . $path : url($path);
+}
+
 function asset(string $path): string
 {
     $file = APP_ROOT . '/assets/' . $path;

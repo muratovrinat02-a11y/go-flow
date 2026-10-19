@@ -26,6 +26,8 @@ function view_head(string $title, string $desc, array $og = []): void
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232A2A2A'/%3E%3Ccircle cx='22' cy='10' r='4' fill='%232CDB94'/%3E%3Cpath d='M8 21h12' stroke='%23F9F8F6' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="<?= h(asset('styles.css')) ?>">
+<?php if (!empty($og['jsonld'])): ?><script type="application/ld+json"><?= json_encode($og['jsonld'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?></script>
+<?php endif; ?>
 </head>
 <body class="<?= is_demo() ? 'is-demo' : '' ?>">
 <?php if (is_demo()): ?>
@@ -66,6 +68,9 @@ function view_footer(): void
       <a class="logo logo--foot" href="<?= h(url('')) ?>"><span class="logo__mark" aria-hidden="true"></span><span class="logo__text">GO&nbsp;Flow</span></a>
       <p>Оператор платформы — <?= h(cfg('operator.name', 'GO Digital')) ?>, <?= h(cfg('operator.ad_name', '')) ?>, ИНН&nbsp;<?= h(cfg('operator.inn', '')) ?> <?= tbd('юрлицо оператора') ?></p>
     </div>
+    <ul class="foot__links foot__dirs">
+      <?php foreach (DIRECTIONS as $k => $d): ?><li><a href="<?= h(dir_url($k)) ?>">Для <?= h($d['noun']) ?></a></li><?php endforeach; ?>
+    </ul>
     <ul class="foot__links">
       <li><a href="<?= h(url('privacy.html')) ?>">Политика обработки персональных данных</a></li>
       <li><a href="<?= h(url('consent.html')) ?>">Согласие на обработку персональных данных</a></li>
@@ -231,9 +236,10 @@ function view_apply(?array $project = null, string $title = '', string $lead = '
 
       <div class="result" id="resPass" hidden>
         <span class="result__icon result__icon--ok" aria-hidden="true"></span>
-        <h3>Анкета подходит под критерии пилота</h3>
-        <p>Завершите регистрацию в кабинете GO&nbsp;Flow: там уже есть запросы по вашему стеку. <?= tbd('Флоу: кабинет сразу или звонок') ?></p>
-        <a class="btn btn--green btn--lg btn--block" href="#" id="cabinetLink">Перейти в кабинет</a>
+        <h3>Готово — доступ к кабинету открыт</h3>
+        <p>Анкета подходит под критерии пилота. В кабинете GO&nbsp;Flow — подборка проектов под ваш стек, откликаться можно в один клик<span id="passProject"></span>.</p>
+        <a class="btn btn--green btn--lg btn--block" href="#" id="cabinetLink" data-cta="cabinet">Войти в кабинет GO Flow →</a>
+        <p class="fnote">Ссылка для входа продублируется в контакт, который вы указали. <?= tbd('механика входа — см. бриф') ?></p>
       </div>
       <div class="result" id="resBorder" hidden>
         <span class="result__icon result__icon--wait" aria-hidden="true"></span>

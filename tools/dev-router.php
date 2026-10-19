@@ -5,6 +5,8 @@ $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $rewrites = [
     '#^/go-flow/p/([a-z0-9-]+)/?$#' => ['/go-flow/project.php', 'slug'],
     '#^/go-flow/r/([a-z0-9]+)/?$#' => ['/go-flow/r.php', 'c'],
+    '#^/go-flow/(python|go|dotnet|react|angular|sa|ba)/?$#' => ['/go-flow/index.php', 'dir'],
+    '#^/go-flow/(sitemap)\.xml$#' => ['/go-flow/sitemap.php', '_'],
 ];
 foreach ($rewrites as $re => [$script, $param]) {
     if (preg_match($re, $path, $m)) { $_GET[$param] = $m[1]; $path = $script; break; }

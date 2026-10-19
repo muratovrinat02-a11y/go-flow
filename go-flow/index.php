@@ -31,6 +31,10 @@ $offers = [
     'c' => ['Заказчики <span class="hl">приглашают вас</span> на проекты сами',
             'Подтвердите опыт, укажите стек и ставку. Компании увидят профиль с отметкой «подтверждённый опыт» и пришлют приглашение.'],
 ];
+// На страницах направлений (SEO) заголовок всегда называет направление.
+if ($dir && $variant === 'b') {
+    $offers['b'][0] = 'Проекты для ' . h($noun) . ' — <span class="hl">только под ваш стек</span>';
+}
 [$h1, $sub] = $offers[$variant];
 $heroProject = $dirProjects[0] ?? ($projects[0] ?? null);
 $dirCounts = [];
@@ -45,10 +49,14 @@ function plural(int $n, string $one, string $few, string $many): string
 }
 $countText = $count . ' ' . plural($count, 'открытый проект', 'открытых проекта', 'открытых проектов');
 
-view_head(
-    'GO Flow — проекты для senior-специалистов' . ($dir ? ': ' . $dir['label'] : ''),
-    'Проектные запросы компаний под ваш стек. Ставка в ₽/час, стек и задачи видны до отклика.'
-);
+$canonical = base_url() . '/' . ($dirKey ? $dirKey . '/' : '');
+$seoTitle = $dir
+    ? 'Проекты для senior ' . $dir['noun'] . ' — удалённо, ставка в ₽/час | GO Flow'
+    : 'GO Flow — проекты для senior-разработчиков и аналитиков, ставка в ₽/час';
+$seoDesc = $dir
+    ? 'Проектная работа для senior ' . $dir['noun'] . ': ' . implode(', ', array_slice($dir['stack'], 0, 4)) . '. Ставка, стек и задачи видны до отклика. Отклик за 2 минуты.'
+    : 'Проектные запросы компаний для senior-специалистов: Python, Go, .NET, React, Angular, аналитика. Ставка в ₽/час, стек и задачи видны до отклика.';
+view_head($seoTitle, $seoDesc, ['url' => $canonical]);
 view_header(true);
 ?>
 <main>
@@ -64,7 +72,7 @@ view_header(true);
       <div class="picker" role="group" aria-label="Ваш стек">
         <span class="picker__label">Ваш стек:</span>
         <?php foreach (DIRECTIONS as $k => $d): ?>
-          <a class="picker__btn<?= $k === $dirKey ? ' is-on' : '' ?>" href="#projects" data-pick-dir="<?= h($k) ?>"><?= h($d['label']) ?><?php if (!empty($dirCounts[$k])): ?><sup><?= (int)$dirCounts[$k] ?></sup><?php endif; ?></a>
+          <a class="picker__btn<?= $k === $dirKey ? ' is-on' : '' ?>" href="<?= h(dir_url($k)) ?>" data-pick-dir="<?= h($k) ?>"><?= h($d['label']) ?><?php if (!empty($dirCounts[$k])): ?><sup><?= (int)$dirCounts[$k] ?></sup><?php endif; ?></a>
         <?php endforeach; ?>
       </div>
 
@@ -122,7 +130,7 @@ view_header(true);
     </div>
     <div class="cards__after">
       <p>Не нашли свой проект? Зарегистрируйтесь: новые запросы придут в кабинет и в Telegram.</p>
-      <a class="btn btn--dark" href="#apply" data-cta="after_cards">Зарегистрироваться — 2 минуты</a>
+      <a class="btn btn--green" href="#apply" data-cta="after_cards">Зарегистрироваться — 2 минуты</a>
     </div>
   </div>
 </section>
