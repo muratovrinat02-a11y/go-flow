@@ -25,7 +25,7 @@ function view_head(string $title, string $desc, array $og = []): void
 <meta property="og:image" content="<?= h(base_url() . '/assets/og.png') ?>">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232A2A2A'/%3E%3Ccircle cx='22' cy='10' r='4' fill='%232CDB94'/%3E%3Cpath d='M8 21h12' stroke='%23F9F8F6' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="<?= h(asset('styles.css')) ?>">
+<style><?= inline_css('styles.css') ?></style>
 <?php if (!empty($og['jsonld'])): ?><script type="application/ld+json"><?= json_encode($og['jsonld'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?></script>
 <?php endif; ?>
 </head>

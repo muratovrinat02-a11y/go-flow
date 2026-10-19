@@ -492,3 +492,4 @@ a.pcard--app:hover { box-shadow: 0 8px 24px rgba(0,0,0,.08); transform: translat
 @media (min-width: 960px) { .foot__in { grid-template-columns: 1.4fr 1fr 1fr; } }
 .foot__dirs { grid-template-columns: 1fr 1fr; column-gap: 20px; }
 .foot__links { align-content: start; }
+.hero__in > *, .apply > *, .crit > *, .phero__grid > *, .pbody__grid > * { min-width: 0; }

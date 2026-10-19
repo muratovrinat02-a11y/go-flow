@@ -5,6 +5,10 @@ declare(strict_types=1);
 const APP_ROOT = __DIR__ . '/..';
 
 mb_internal_encoding('UTF-8');
+// Сжатие ответа средствами PHP, если сервер не сжимает сам (Apache не сожмёт повторно).
+if (PHP_SAPI !== 'cli' && extension_loaded('zlib') && !ini_get('zlib.output_compression')) {
+    @ini_set('zlib.output_compression', '1');
+}
 date_default_timezone_set('Europe/Moscow');
 
 $configFile = APP_ROOT . '/config.php';
@@ -80,6 +84,22 @@ function asset(string $path): string
     $file = APP_ROOT . '/assets/' . $path;
     $v = is_file($file) ? (string)filemtime($file) : '1';
     return url('assets/' . $path) . '?v=' . $v;
+}
+
+/** CSS для встраивания в страницу: без комментариев и лишних пробелов. Кэшируется в data/ по дате файла. */
+function inline_css(string $file): string
+{
+    $src = APP_ROOT . '/assets/' . $file;
+    $cache = dirname((string)cfg('db_path', APP_ROOT . '/data/goflow.sqlite')) . '/' . basename($file) . '.' . filemtime($src) . '.min';
+    if (is_file($cache)) return (string)file_get_contents($cache);
+    $css = (string)file_get_contents($src);
+    $css = preg_replace('#/\*.*?\*/#s', '', $css);
+    $css = preg_replace('/\s+/', ' ', $css);
+    $css = preg_replace('/\s*([{}:;,>])\s*/', '$1', $css);
+    $css = str_replace([';}', '</'], ['}', '<\/'], trim($css));
+    foreach (glob(dirname($cache) . '/' . basename($file) . '.*.min') ?: [] as $old) @unlink($old);
+    @file_put_contents($cache, $css, LOCK_EX);
+    return $css;
 }
 
 function json_out($data, int $code = 200): void

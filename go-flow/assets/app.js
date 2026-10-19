@@ -32,27 +32,34 @@
   })();
 
   /* ================= АНАЛИТИКА ================= */
+  // Счётчики подключаем после загрузки страницы: события до этого копятся в очереди ym/_tmr.
   var analyticsLoaded = false;
+  function addScript(src, id) {
+    var s = document.createElement('script');
+    s.async = true; s.src = src; if (id) s.id = id;
+    document.head.appendChild(s);
+  }
+  function afterLoad(fn) {
+    var run = function () { (window.requestIdleCallback || function (f) { setTimeout(f, 1); })(fn, { timeout: 3000 }); };
+    if (document.readyState === 'complete') run(); else window.addEventListener('load', run);
+  }
   function loadAnalytics() {
     if (analyticsLoaded) return;
     analyticsLoaded = true;
     if (CONFIG.ymId) {
-      (function (m, e, t, r, i, k, a) {
-        m[i] = m[i] || function () { (m[i].a = m[i].a || []).push(arguments); };
-        m[i].l = 1 * new Date();
-        k = e.createElement(t); a = e.getElementsByTagName(t)[0];
-        k.async = 1; k.src = r; a.parentNode.insertBefore(k, a);
-      })(window, document, 'script', 'https://mc.yandex.ru/metrika/tag.js', 'ym');
+      window.ym = window.ym || function () { (window.ym.a = window.ym.a || []).push(arguments); };
+      window.ym.l = 1 * new Date();
       window.ym(CONFIG.ymId, 'init', { clickmap: true, trackLinks: true, accurateTrackBounce: true, webvisor: true,
         params: { variant: PAGE.variant || '', dir: PAGE.dir || '', page: PAGE.type } });
     }
     if (CONFIG.vkPixelId) {
       var _tmr = window._tmr || (window._tmr = []);
       _tmr.push({ id: CONFIG.vkPixelId, type: 'pageView', start: (new Date()).getTime() });
-      var s = document.createElement('script');
-      s.async = true; s.id = 'tmr-code'; s.src = 'https://top-fwz1.mail.ru/js/code.js';
-      document.head.appendChild(s);
     }
+    afterLoad(function () {
+      if (CONFIG.ymId) addScript('https://mc.yandex.ru/metrika/tag.js');
+      if (CONFIG.vkPixelId) addScript('https://top-fwz1.mail.ru/js/code.js', 'tmr-code');
+    });
   }
   function goal(name, data) {
     data = data || {};
