@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /api/
+Disallow: /r/
+
+Sitemap: https://spec.godigital.rocks/sitemap.xml

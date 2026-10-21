@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
+  <rect width="640" height="640" fill="#202020"/>
+  <defs>
+    <mask id="g">
+      <polygon points="0,0 640,0 640,640 522,640 0,118" fill="#fff"/>
+      <polygon points="218,319 420,250 470,250 470,320 218,320" fill="#000"/>
+    </mask>
+  </defs>
+  <g mask="url(#g)" fill="#fff">
+    <path fill-rule="evenodd" d="M76 320a142 142 0 1 0 284 0a142 142 0 1 0 -284 0Z M130 320a88 88 0 1 0 176 0a88 88 0 1 0 -176 0Z"/>
+    <rect x="190" y="320" width="164" height="42"/>
+  </g>
+  <path fill="#fff" d="M390 178H540V232H446V296H514V350H446V462H390Z"/>
+  <polygon points="118,337 226,446 108,455" fill="#2CDB94"/>
+</svg>

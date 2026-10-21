@@ -117,47 +117,47 @@ function seed_projects(PDO $pdo): void
 {
     $common = [
         'conditions' => "Удалённо\nДоговор с самозанятым или ИП, расчёты в рублях\nОплата по отчётам о часах",
-        'process' => "Скоринг GO Flow (один раз)\nЗнакомство с заказчиком\nТехническое интервью с заказчиком",
+        'process' => "Регистрация и подтверждение опыта на платформе (один раз)\nЗнакомство с заказчиком\nСтарт проекта",
     ];
     $rows = [
-        ['python', 'Backend-разработчик', 'Финтех', 6000, ['Python', 'FastAPI', 'PostgreSQL', 'Docker'], ['Kafka', 'Redis'],
+        ['python', 'Backend-разработчик', 'Финтех', [2000, 3000], ['Python', 'FastAPI', 'PostgreSQL', 'Docker'], ['Kafka', 'Redis'],
             'Развитие платёжного бэкенда: новые API и интеграции.',
             "Проектирование и разработка REST API на FastAPI\nИнтеграции с внешними платёжными сервисами\nОптимизация запросов к PostgreSQL\nCode review и менторинг middle-разработчиков",
-            "6+ лет коммерческой разработки на Python\nAsyncio, FastAPI или аналог\nPostgreSQL: индексы, планы запросов\nDocker, CI/CD"],
-        ['go', 'Backend-разработчик', 'E-commerce', null, ['Go', 'PostgreSQL', 'Kafka'], ['Kubernetes', 'gRPC'],
+            "От 3 лет коммерческой разработки на Python\nAsyncio, FastAPI или аналог\nPostgreSQL: индексы, планы запросов\nDocker, CI/CD"],
+        ['go', 'Backend-разработчик', 'E-commerce', [1500, 2200], ['Go', 'PostgreSQL', 'Kafka'], ['Kubernetes', 'gRPC'],
             'Высоконагруженный сервис каталога и заказов.',
             "Разработка микросервисов на Go\nРабота с событиями в Kafka\nПрофилирование и снижение latency",
-            "6+ лет в бэкенде, из них заметная часть на Go\nОпыт highload\nKafka в продакшене"],
-        ['dotnet', '.NET-разработчик', 'Банк', null, ['C#', '.NET', 'PostgreSQL'], ['ASP.NET Core', 'RabbitMQ'],
+            "От 3 лет в бэкенде, из них заметная часть на Go\nОпыт highload\nKafka в продакшене"],
+        ['dotnet', '.NET-разработчик', 'Банк', [1500, 2200], ['C#', '.NET', 'PostgreSQL'], ['ASP.NET Core', 'RabbitMQ'],
             'Модернизация внутренних сервисов банка.',
             "Разработка сервисов на .NET 8\nПеренос легаси-логики в новые сервисы\nНаписание тестов",
-            "6+ лет на C# / .NET\nASP.NET Core, EF Core\nОпыт работы с банковскими системами — плюс"],
-        ['react', 'Frontend-разработчик', 'Телеком', null, ['React', 'TypeScript', 'Next.js'], ['Redux', 'Storybook'],
+            "От 3 лет на C# / .NET\nASP.NET Core, EF Core\nОпыт работы с банковскими системами — плюс"],
+        ['react', 'Frontend-разработчик', 'Телеком', [1500, 2200], ['React', 'TypeScript', 'Next.js'], ['Redux', 'Storybook'],
             'Личный кабинет клиента: новые разделы и дизайн-система.',
             "Разработка интерфейсов на React и TypeScript\nРазвитие дизайн-системы\nПроизводительность и доступность",
-            "6+ лет во фронтенде\nReact, TypeScript\nSSR на Next.js"],
-        ['angular', 'Frontend-разработчик', 'Госсектор', null, ['Angular', 'TypeScript', 'RxJS'], ['NgRx'],
+            "От 3 лет во фронтенде\nReact, TypeScript\nSSR на Next.js"],
+        ['angular', 'Frontend-разработчик', 'Госсектор', [1500, 2200], ['Angular', 'TypeScript', 'RxJS'], ['NgRx'],
             'Портал с формами и личным кабинетом.',
             "Разработка модулей на Angular\nРабота со сложными формами\nИнтеграция с REST API",
-            "6+ лет во фронтенде\nAngular 15+\nRxJS"],
-        ['sa', 'Системный аналитик', 'Ритейл', null, ['BPMN', 'UML', 'REST', 'SQL'], ['Kafka'],
+            "От 3 лет во фронтенде\nAngular 15+\nRxJS"],
+        ['sa', 'Системный аналитик', 'Ритейл', [1500, 2200], ['BPMN', 'UML', 'REST', 'SQL'], ['Kafka'],
             'Интеграции между учётными системами и маркетплейсами.',
             "Сбор и формализация требований\nОписание API и интеграций\nПостановка задач разработке",
-            "6+ лет в системном анализе\nОписание REST API, SQL\nBPMN, UML"],
-        ['ba', 'Бизнес-аналитик', 'Логистика', null, ['BPMN', 'User Stories', 'SQL'], ['BI'],
+            "От 3 лет в системном анализе\nОписание REST API, SQL\nBPMN, UML"],
+        ['ba', 'Бизнес-аналитик', 'Логистика', [1500, 2200], ['BPMN', 'User Stories', 'SQL'], ['BI'],
             'Оптимизация процессов складской логистики.',
             "Анализ и моделирование процессов\nРабота с заказчиком и бэклогом\nПодготовка требований к доработкам",
-            "6+ лет в бизнес-анализе\nBPMN, User Stories\nSQL на уровне выгрузок"],
+            "От 3 лет в бизнес-анализе\nBPMN, User Stories\nSQL на уровне выгрузок"],
     ];
-    $st = $pdo->prepare('INSERT INTO projects (slug,status,is_example,direction,role,grade,domain,summary,description,stack_required,stack_nice,tasks,requirements,conditions,process,format,rate_max,sort,published_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime(\'now\',\'localtime\'))');
+    $st = $pdo->prepare('INSERT INTO projects (slug,status,is_example,direction,role,grade,domain,summary,description,stack_required,stack_nice,tasks,requirements,conditions,process,format,workload,duration,rate_min,rate_max,sort,published_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime(\'now\',\'localtime\'))');
     foreach ($rows as $i => $r) {
         [$dir, $role, $domain, $rate, $req, $nice, $summary, $tasks, $reqs] = $r;
         $st->execute([
             $dir . '-' . ($i + 1), 'open', 1, $dir, $role, 'Senior', $domain, $summary,
             'Пример карточки. Реальное описание проекта подставит команда GO Digital.',
             json_encode($req, JSON_UNESCAPED_UNICODE), json_encode($nice, JSON_UNESCAPED_UNICODE),
-            $tasks, $reqs, $common['conditions'], $common['process'], 'Удалённо', $rate, ($i + 1) * 10,
+            $tasks, $reqs, $common['conditions'], $common['process'], 'Удалённо', '40 ч/нед', 'от 6 месяцев', $rate[0], $rate[1], ($i + 1) * 10,
         ]);
     }
 }

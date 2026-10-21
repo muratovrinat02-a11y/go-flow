@@ -161,17 +161,7 @@
     var empty = $('#cardsEmpty');
     if (empty) empty.hidden = list.length > 0;
   }
-  function renderHero() {
-    var box = $('#heroCard');
-    if (!box) return;
-    var src = PAGE.dir ? PROJECTS.filter(function (p) { return p.direction === PAGE.dir; }) : PROJECTS;
-    var p = src[0] || PROJECTS[0];
-    if (!p) { box.innerHTML = '<p class="app__empty">Скоро здесь появятся проекты</p>'; return; }
-    box.innerHTML = cardHtml(p, { app: true });
-    var rest = PROJECTS.length - 1;
-    var more = $('#heroMore');
-    if (more && rest > 0) more.innerHTML = '<a href="#projects">+ ещё ' + rest + ' в подборке →</a>';
-  }
+
 
   document.addEventListener('click', function (e) {
     var f = e.target.closest('#filters button[data-f]');
@@ -229,37 +219,51 @@
     draw();
   })();
 
-  /* ================= ФОРМА ================= */
+  /* ================= ФОРМА: стек и опыт → регистрация ================= */
   var form = $('#form');
-  var token = '';
   var picked = myStack.slice();
-  if (form) initForm();
 
   function setFormProject(p) {
     var ctx = $('#formCtx');
+    if (!form) return;
     $('#fProject').value = p ? p.id : '';
-    if (!ctx) return;
-    ctx.hidden = !p;
+    if (ctx) {
+      ctx.hidden = !p;
+      if (p) {
+        $('#formCtxTitle').textContent = p.title;
+        $('#formCtxRate').textContent = p.rate || '';
+        $('#formCtxClear').hidden = PAGE.type === 'project';
+      }
+    }
     if (p) {
-      $('#formCtxTitle').textContent = p.title;
-      $('#formCtxRate').textContent = p.rate || '';
-      $('#formCtxClear').hidden = PAGE.type === 'project';
-      var sel = $('#fDirection');
-      if (sel && !sel.value) sel.value = p.direction;
-      p.stack.forEach(function (s) { if (picked.indexOf(s) < 0 && has(s)) picked.push(s); });
+      var r = form.querySelector('input[name="direction"][value="' + p.direction + '"]');
+      if (r && !form.querySelector('input[name="direction"]:checked')) { r.checked = true; renderStackPick(p.direction); }
     }
   }
 
-  function initForm() {
-    var step1 = $('#step1'), step2 = $('#step2');
+  function renderStackPick(dir) {
+    var box = $('#stackPick'), field = $('#stackField');
+    if (!box) return;
+    var list = (DIRS[dir] && DIRS[dir].stack) ? DIRS[dir].stack.slice() : [];
+    field.hidden = !list.length;
+    box.innerHTML = list.map(function (s) {
+      return '<button type="button" aria-pressed="' + (picked.indexOf(s) > -1) + '">' + esc(s) + '</button>';
+    }).join('');
+  }
 
-    function renderStackPick(dir) {
-      var list = (DIRS[dir] && DIRS[dir].stack) ? DIRS[dir].stack.slice() : [];
-      picked.forEach(function (s) { if (list.indexOf(s) < 0) list.push(s); });
-      $('#stackPick').innerHTML = list.map(function (s) {
-        return '<button type="button" aria-pressed="' + (picked.indexOf(s) > -1) + '">' + esc(s) + '</button>';
-      }).join('');
+  if (form) {
+    var checkedDir = form.querySelector('input[name="direction"]:checked');
+    if (!checkedDir && PAGE.dir) {
+      checkedDir = form.querySelector('input[name="direction"][value="' + PAGE.dir + '"]');
+      if (checkedDir) checkedDir.checked = true;
     }
+    if (checkedDir) renderStackPick(checkedDir.value);
+
+    form.addEventListener('change', function (e) {
+      if (e.target.name === 'direction') { renderStackPick(e.target.value); goal('spec_form_dir', { dir: e.target.value }); }
+      var seg = e.target.closest('.seg'); if (seg) seg.classList.remove('is-bad');
+      $('#err').hidden = true;
+    });
     $('#stackPick').addEventListener('click', function (e) {
       var b = e.target.closest('button');
       if (!b) return;
@@ -269,132 +273,60 @@
     });
     var clear = $('#formCtxClear');
     if (clear) clear.addEventListener('click', function () { setFormProject(null); });
-
-    function setProgress(n) {
-      $('#progressLabel').textContent = 'Шаг ' + n + ' из 2';
-      $('#progressBar').style.width = (n * 50) + '%';
-    }
-    function markBad(el, bad) {
-      var t = el.closest('.seg') || el.closest('.check') || el;
-      t.classList.toggle('is-bad', bad);
-    }
-    function validate(fs, errEl) {
-      var ok = true, firstBad = null, seen = {};
-      $$('[required]', fs).forEach(function (el) {
-        var bad;
-        if (el.type === 'radio') {
-          if (seen[el.name]) return;
-          seen[el.name] = true;
-          bad = !form.querySelector('input[name="' + el.name + '"]:checked');
-        } else if (el.type === 'checkbox') {
-          bad = !el.checked;
-        } else if (el.name === 'contact') {
-          var v = el.value.trim();
-          bad = !(/^@?[A-Za-z0-9_]{5,32}$/.test(v) || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));
-        } else if (el.type === 'url') {
-          bad = !/^(https?:\/\/)?[^\s.]+\.[^\s]{2,}/i.test(el.value.trim());
-        } else {
-          bad = !String(el.value).trim();
-        }
-        markBad(el, bad);
-        if (bad) { ok = false; firstBad = firstBad || el; }
-      });
-      errEl.hidden = ok;
-      if (!ok) { errEl.textContent = 'Заполните отмеченные поля.'; if (firstBad.focus) firstBad.focus(); }
-      return ok;
-    }
-    form.addEventListener('change', function (e) { markBad(e.target, false); });
-    form.addEventListener('input', function (e) { markBad(e.target, false); });
-
-    function payload(stage) {
-      var fd = new FormData(form), out = {};
-      fd.forEach(function (v, k) { out[k] = v; });
-      out.stage = stage;
-      out.token = token;
-      out.consent_pd = form.consent_pd.checked;
-      out.consent_ads = form.consent_ads.checked;
-      out.stack = picked.concat(String(out.stack_extra || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean));
-      delete out.stack_extra;
-      Object.keys(utm).forEach(function (k) { out[k] = utm[k]; });
-      out.variant = PAGE.variant || '';
-      out.page_dir = PAGE.dir || (PAGE.project ? PAGE.project.direction : '');
-      return out;
-    }
-    function send(data) {
-      if (!CONFIG.apiApply) return Promise.resolve({ ok: true, demo: true });
-      return fetch(CONFIG.apiApply, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data), credentials: 'same-origin'
-      }).then(function (r) { return r.json(); });
-    }
-    function busy(btn, on, text) {
-      btn.disabled = on;
-      if (on) { btn.dataset.text = btn.innerHTML; btn.textContent = text || 'Отправляем…'; }
-      else if (btn.dataset.text) btn.innerHTML = btn.dataset.text;
-    }
-    function fail(errEl) {
-      errEl.hidden = false;
-      errEl.innerHTML = 'Не получилось отправить. Проверьте интернет и попробуйте ещё раз.';
-    }
-    function showResult(res) {
-      form.hidden = true;
-      var ctx = $('#formCtx'); if (ctx) ctx.hidden = true;
-      $('#resPass').hidden = res !== 'pass';
-      $('#resBorder').hidden = res !== 'border';
-      $('#resFail').hidden = res !== 'fail';
-      goal('spec_score_' + res);
-      $('#formbox').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    $('#next1').addEventListener('click', function () {
-      if (!validate(step1, $('#err1'))) return;
-      var btn = this;
-      busy(btn, true, 'Сохраняем…');
-      send(payload('step1')).then(function (r) {
-        busy(btn, false);
-        if (!r || !r.ok) return fail($('#err1'));
-        token = r.token || '';
-        goal('spec_form_step1');
-        if (r.score === 'fail') {
-          $('#failText').textContent = 'Сейчас пилот работает только со специалистами, у которых 6+ лет на основном стеке. Если критерии расширятся, напишем первыми. А пока запросы с другими требованиями публикуем в Telegram.';
-          showResult('fail');
-          return;
-        }
-        renderStackPick(form.direction.value);
-        step1.hidden = true; step2.hidden = false;
-        setProgress(2);
-        $('#formbox').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }).catch(function () { busy(btn, false); fail($('#err1')); });
+    var back = $('#resBack');
+    if (back) back.addEventListener('click', function () {
+      $('#resLow').hidden = true; form.hidden = false;
+      var y = form.querySelector('input[name="years"]:checked'); if (y) y.checked = false;
     });
-    $('#back2').addEventListener('click', function () { step2.hidden = true; step1.hidden = false; setProgress(1); });
+
     form.addEventListener('submit', function (e) {
       e.preventDefault();
-      if (!validate(step2, $('#err2'))) return;
-      var btn = $('#submit2');
-      busy(btn, true);
-      send(payload('step2')).then(function (r) {
-        busy(btn, false);
-        if (!r || !r.ok) return fail($('#err2'));
-        goal('spec_form_submit');
-        if (r.cabinetUrl) $('#cabinetLink').href = r.cabinetUrl;
-        var pp = $('#passProject'), ctxT = $('#formCtxTitle');
-        if (pp && ctxT && $('#fProject').value) pp.textContent = ', в том числе на «' + ctxT.textContent + '»';
-        showResult(r.score || 'border');
-      }).catch(function () { busy(btn, false); fail($('#err2')); });
+      var dir = form.querySelector('input[name="direction"]:checked');
+      var years = form.querySelector('input[name="years"]:checked');
+      var bad = false;
+      [['direction', dir], ['years', years]].forEach(function (x) {
+        var seg = form.querySelector('input[name="' + x[0] + '"]').closest('.seg');
+        seg.classList.toggle('is-bad', !x[1]); if (!x[1]) bad = true;
+      });
+      if (bad) { var err = $('#err'); err.hidden = false; err.textContent = 'Выберите направление и опыт.'; return; }
+
+      var data = { direction: dir.value, years: years.value, stack: picked, project_id: $('#fProject').value,
+        website: form.website.value, variant: PAGE.variant || '', page_dir: PAGE.dir || (PAGE.project ? PAGE.project.direction : '') };
+      Object.keys(utm).forEach(function (k) { data[k] = utm[k]; });
+      var btn = $('#submitBtn');
+      btn.disabled = true;
+
+      var fallback = function () {
+        // API недоступен — всё равно ведём на регистрацию, чтобы не терять человека.
+        if (years.value === 'lt2') return showLow();
+        go(CONFIG.registerUrl + (CONFIG.registerUrl.indexOf('?') > -1 ? '&' : '?') + 'ref=spec&direction=' + encodeURIComponent(dir.value));
+      };
+      fetch(CONFIG.apiApply, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data), credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (r) {
+          if (!r || !r.ok) return fallback();
+          if (r.score === 'fail') return showLow();
+          go(r.redirect || CONFIG.registerUrl);
+        })
+        .catch(fallback);
+
+      function showLow() {
+        btn.disabled = false;
+        goal('spec_form_low');
+        form.hidden = true; $('#resLow').hidden = false;
+        var ctx = $('#formCtx'); if (ctx) ctx.hidden = true;
+      }
+      function go(url) {
+        goal('spec_form_submit', { dir: dir.value, years: years.value });
+        form.hidden = true; $('#resGo').hidden = false; $('#goLink').href = url;
+        var ctx = $('#formCtx'); if (ctx) ctx.hidden = true;
+        // Даём счётчику отправить цель, потом уходим на платформу.
+        setTimeout(function () { location.href = url; }, 400);
+      }
     });
-    $('#cabinetLink').href = CONFIG.cabinetUrl || '#';
   }
 
   /* ================= ССЫЛКИ, СТИКИ, COOKIE ================= */
-  function tgHref(place) {
-    var u = CONFIG.tgUrl || 'https://t.me/';
-    return u + (u.indexOf('?') > -1 ? '&' : '?') + 'start=' + encodeURIComponent((utm.utm_campaign || 'landing') + '_' + place);
-  }
-  $$('[data-tg]').forEach(function (a) {
-    var place = a.getAttribute('data-tg');
-    a.href = tgHref(place); a.target = '_blank'; a.rel = 'noopener';
-    a.addEventListener('click', function () { goal('spec_tg_click', { place: place }); });
-  });
   document.addEventListener('click', function (e) {
     var c = e.target.closest('[data-cta]');
     if (c) goal('spec_cta_click', { place: c.getAttribute('data-cta') });
@@ -423,7 +355,7 @@
       var onScroll = function () {
         var past = pr.getBoundingClientRect().top < window.innerHeight * 0.3;
         sb.href = past ? '#apply' : '#projects';
-        sb.textContent = past ? 'Зарегистрироваться — 2 минуты' : label;
+        sb.textContent = past ? 'Зарегистрироваться' : label;
       };
       window.addEventListener('scroll', onScroll, { passive: true });
       onScroll();
@@ -443,6 +375,5 @@
   renderFilters();
   renderStackChips();
   renderCards();
-  renderHero();
   if (PAGE.type === 'project' && PAGE.project) goal('spec_project_view', { project: PAGE.project.slug });
 })();

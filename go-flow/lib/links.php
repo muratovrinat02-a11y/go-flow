@@ -71,7 +71,7 @@ function tg_post_text(array $p, string $link, array $l = []): string
         foreach (array_slice($p['tasks_list'], 0, 3) as $t) $lines[] = '— ' . $t;
     }
     $lines[] = '';
-    $lines[] = 'Ставка и стек видны до отклика. Отклик — 2 минуты:';
+    $lines[] = 'Ставка и задачи — по ссылке. Регистрация и отклик:';
     $lines[] = $link;
     if (!empty($l['paid'])) {
         $lines[] = '';
@@ -114,7 +114,7 @@ function sources_report(string $from, string $to): array
         if (isset($rows[$k])) $rows[$k]['cost'] = (int)$r['cost'];
     }
     foreach ($rows as &$r) {
-        $r['cpl'] = ($r['cost'] && $r['step2']) ? (int)round($r['cost'] / $r['step2']) : null;
+        $r['cpl'] = ($r['cost'] && $r['step1']) ? (int)round($r['cost'] / $r['step1']) : null;
         $r['cpa'] = ($r['cost'] && $r['pass']) ? (int)round($r['cost'] / $r['pass']) : null;
         $r['cr'] = $r['visitors'] ? round($r['step1'] / $r['visitors'] * 100, 1) : null;
     }

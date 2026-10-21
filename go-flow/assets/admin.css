@@ -140,3 +140,5 @@ select.st { border: 0; border-radius: 999px; padding: 5px 10px; font: 650 12px/1
 .dl dt { color: var(--muted); font-size: 13px; }
 .dl dd { margin: 0; font-weight: 550; word-break: break-word; }
 .dl--sm dd { font-weight: 500; font-size: 13.5px; }
+.alogo { width: 34px; height: 23px; color: #fff; flex: none; }
+.alogo--dark { color: var(--ink); }

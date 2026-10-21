@@ -102,6 +102,24 @@ function inline_css(string $file): string
     return $css;
 }
 
+/** Знак GF (без фона), вставляется прямо в разметку. */
+function logo_svg(string $class = 'logo__mark'): string
+{
+    return '<svg class="' . h($class) . '" viewBox="96 165 456 302" aria-hidden="true" focusable="false">'
+        . '<defs><mask id="gfm"><polygon points="0,0 640,0 640,640 522,640 0,118" fill="#fff"/><polygon points="218,319 420,250 470,250 470,320 218,320" fill="#000"/></mask></defs>'
+        . '<g mask="url(#gfm)" fill="currentColor"><path fill-rule="evenodd" d="M76 320a142 142 0 1 0 284 0a142 142 0 1 0 -284 0Z M130 320a88 88 0 1 0 176 0a88 88 0 1 0 -176 0Z"/><rect x="190" y="320" width="164" height="42"/></g>'
+        . '<path fill="currentColor" d="M390 178H540V232H446V296H514V350H446V462H390Z"/>'
+        . '<polygon points="118,337 226,446 108,455" fill="#2CDB94"/></svg>';
+}
+
+/** Ссылка на регистрацию на платформе с UTM и контекстом анкеты. */
+function register_url(array $params = []): string
+{
+    $base = (string)cfg('register_url', 'https://goflow.godigital.rocks/start');
+    $params = array_filter($params, fn($v) => $v !== null && $v !== '');
+    return $params ? $base . (strpos($base, '?') === false ? '?' : '&') . http_build_query($params) : $base;
+}
+
 function json_out($data, int $code = 200): void
 {
     http_response_code($code);
@@ -135,8 +153,7 @@ function public_config(): array
         'apiApply' => url('api/apply.php'),
         'ymId' => (string)cfg('ym_id', ''),
         'vkPixelId' => (string)cfg('vk_pixel_id', ''),
-        'tgUrl' => (string)cfg('tg_url', 'https://t.me/'),
-        'cabinetUrl' => (string)cfg('cabinet_url', '#'),
+        'registerUrl' => (string)cfg('register_url', 'https://goflow.godigital.rocks/start'),
         'analyticsAfterConsent' => (bool)cfg('analytics_after_consent', false),
     ];
 }

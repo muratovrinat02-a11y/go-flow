@@ -27,30 +27,7 @@ $ogDesc = trim(implode(' · ', array_filter([
     $p['format'], $p['workload'], $p['duration'],
 ])) . '. Отклик за 2 минуты на GO Flow.');
 
-$jsonld = null;
-if ($isOpen) {
-    $descHtml = '<p>' . h($p['summary']) . '</p>' . ($p['description'] ? '<p>' . nl2br(h($p['description'])) . '</p>' : '');
-    foreach (['Задачи' => $p['tasks_list'], 'Требования' => $p['requirements_list'], 'Условия' => $p['conditions_list']] as $t => $items) {
-        if ($items) $descHtml .= '<p><b>' . $t . '</b></p><ul><li>' . implode('</li><li>', array_map('h', $items)) . '</li></ul>';
-    }
-    $jsonld = [
-        '@context' => 'https://schema.org', '@type' => 'JobPosting',
-        'title' => $p['title'], 'description' => $descHtml,
-        'datePosted' => date('Y-m-d', strtotime($p['published_at'] ?: $p['created_at'])),
-        'validThrough' => date('Y-m-d', strtotime(($p['published_at'] ?: $p['created_at']) . ' +60 days')),
-        'employmentType' => 'CONTRACTOR', 'jobLocationType' => 'TELECOMMUTE', 'directApply' => true,
-        'hiringOrganization' => ['@type' => 'Organization', 'name' => cfg('operator.name', 'GO Digital'), 'sameAs' => 'https://godigital.rocks/'],
-        'skills' => implode(', ', array_merge($p['stack_required'], $p['stack_nice'])),
-        'identifier' => ['@type' => 'PropertyValue', 'name' => 'GO Flow', 'value' => $p['slug']],
-    ];
-    if ($p['rate_min'] || $p['rate_max']) {
-        $jsonld['baseSalary'] = ['@type' => 'MonetaryAmount', 'currency' => 'RUB', 'value' => array_filter([
-            '@type' => 'QuantitativeValue', 'unitText' => 'HOUR',
-            'minValue' => $p['rate_min'] ? (int)$p['rate_min'] : null, 'maxValue' => $p['rate_max'] ? (int)$p['rate_max'] : null,
-        ])];
-    }
-}
-view_head($ogTitle . ' — GO Flow', $ogDesc, ['title' => $ogTitle, 'description' => $ogDesc, 'url' => project_url($p, true), 'jsonld' => $jsonld]);
+view_head($ogTitle . ' — GO Flow', $ogDesc, ['title' => $ogTitle, 'description' => $ogDesc, 'url' => project_url($p, true)]);
 view_header(false);
 
 $meta = array_filter([
@@ -96,12 +73,11 @@ $sections = [
         <?php if ($p['is_example'] && $rate) echo tbd('ставка из примера'); ?>
         <?php if ($p['rate_note']): ?><p class="pbox__note"><?= h($p['rate_note']) ?></p><?php endif; ?>
         <?php if ($isOpen): ?>
-          <a class="btn btn--green btn--lg btn--block" href="#apply" data-cta="project_hero">Откликнуться — 2 минуты</a>
-          <p class="pbox__hint">Анкета один раз — дальше откликаетесь на проекты в кабинете.</p>
+          <a class="btn btn--green btn--lg btn--block" href="#apply" data-cta="project_hero">Откликнуться</a>
+          <p class="pbox__hint">Два вопроса — и регистрация на платформе. Старт проекта за <?= h(cfg('hero.start', '1–3 недели')) ?>.</p>
         <?php else: ?>
           <a class="btn btn--green btn--lg btn--block" href="#apply" data-cta="project_closed">Зарегистрироваться</a>
         <?php endif; ?>
-        <a class="pbox__tg" href="#" data-tg="project">Новые проекты в Telegram →</a>
         <?php if ($p['published_at']): ?><p class="pbox__date">Опубликован <?= h(date('d.m.Y', strtotime($p['published_at']))) ?></p><?php endif; ?>
       </aside>
     </div>
@@ -120,7 +96,7 @@ $sections = [
         <ul class="blist"><?php foreach ($items as $it): ?><li><?= h($it) ?></li><?php endforeach; ?></ul>
       <?php endforeach; ?>
       <?php if ($p['process_list']): ?>
-        <h2 class="h3">Как проходит отбор</h2>
+        <h2 class="h3">Как стартует проект</h2>
         <ol class="proc"><?php foreach ($p['process_list'] as $i => $it): ?><li><b><?= $i + 1 ?></b><span><?= h($it) ?></span></li><?php endforeach; ?></ol>
       <?php endif; ?>
     </div>
@@ -135,9 +111,7 @@ $sections = [
   </div>
 </section>
 
-<?php view_apply($isOpen ? $p : null,
-    $isOpen ? 'Откликнуться на «' . h($p['title']) . '»' : '',
-    $isOpen ? 'Шаг 1 — три поля. Отклик привяжется к проекту, результат скоринга придёт в Telegram или на почту.' : ''); ?>
+<?php view_apply($isOpen ? $p : null); ?>
 
 <?php if ($others): ?>
 <section class="section section--paper2">

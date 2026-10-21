@@ -34,7 +34,7 @@ if (!admin_logged_in()) {
     ?>
     <main class="login">
       <form class="login__box" method="post" autocomplete="on">
-        <div class="login__logo"><span class="logo__mark"></span> GO Flow · админка</div>
+        <div class="login__logo"><?= logo_svg("alogo alogo--dark") ?> GO Flow · админка</div>
         <?= csrf_field() ?>
         <label class="af"><span>E-mail</span><input type="email" name="email" required autofocus autocomplete="username" value="<?= h($_POST['email'] ?? '') ?>"></label>
         <label class="af"><span>Пароль</span><input type="password" name="password" required autocomplete="current-password"></label>
@@ -73,10 +73,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             catch (Throwable $e) { $msg = 'Ошибка синхронизации: ' . $e->getMessage(); }
             redirect(['page' => 'projects'], $msg);
         case 'app_update':
-            $st = (string)$_POST['status'];
-            $allowed = ['new', 'review', 'invited', 'rejected', 'archived'];
-            db()->prepare('UPDATE applications SET status = ?, notes = ?, updated_at = datetime(\'now\',\'localtime\') WHERE id = ?')
-                ->execute([in_array($st, $allowed, true) ? $st : 'new', mb_substr((string)$_POST['notes'], 0, 5000), (int)$_POST['id']]);
+            db()->prepare('UPDATE applications SET notes = ?, updated_at = datetime(\'now\',\'localtime\') WHERE id = ?')
+                ->execute([mb_substr((string)$_POST['notes'], 0, 5000), (int)$_POST['id']]);
             redirect(['page' => 'application', 'id' => (int)$_POST['id']], 'Заявка обновлена');
         case 'link_save':
             $src = strtolower(preg_replace('/[^a-zA-Z0-9_\-]/', '', (string)$_POST['utm_source']));
@@ -115,7 +113,7 @@ if ($page === 'applications' && ($_GET['export'] ?? '') === 'csv') {
     header('Content-Disposition: attachment; filename="goflow-applications-' . date('Y-m-d') . '.csv"');
     $out = fopen('php://output', 'w');
     fwrite($out, "\xEF\xBB\xBF");
-    $cols = ['id', 'created_at', 'stage', 'score', 'status', 'direction', 'years', 'contact', 'stack', 'handson', 'tenure', 'legal', 'overlap', 'rate', 'workload', 'resume', 'project', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'link_code', 'consent_ads', 'notes'];
+    $cols = ['id', 'created_at', 'score', 'direction', 'years', 'stack', 'project', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'link_code', 'variant', 'landing_url', 'notes'];
     fputcsv($out, $cols, ';');
     foreach ($rows as $r) {
         $r['stack'] = implode(', ', json_decode($r['stack'] ?: '[]', true) ?: []);
@@ -135,7 +133,7 @@ function applications_query(array $f, int $limit = 200): array
         }
     }
     if (($f['project_id'] ?? '') !== '') { $where[] = 'a.project_id = ?'; $args[] = (int)$f['project_id']; }
-    if (($f['q'] ?? '') !== '') { $where[] = '(a.contact LIKE ? OR a.resume LIKE ? OR a.stack LIKE ? OR a.notes LIKE ?)'; $q = '%' . $f['q'] . '%'; array_push($args, $q, $q, $q, $q); }
+    if (($f['q'] ?? '') !== '') { $where[] = '(a.stack LIKE ? OR a.notes LIKE ? OR a.utm_campaign LIKE ?)'; $q = '%' . $f['q'] . '%'; array_push($args, $q, $q, $q); }
     if (($f['from'] ?? '') !== '') { $where[] = 'date(a.created_at) >= ?'; $args[] = $f['from']; }
     if (($f['to'] ?? '') !== '') { $where[] = 'date(a.created_at) <= ?'; $args[] = $f['to']; }
     $sql = 'SELECT a.*, TRIM(COALESCE(p.grade,\'\') || \' \' || COALESCE(p.role,\'\')) project_title, p.slug project_slug FROM applications a LEFT JOIN projects p ON p.id = a.project_id'
@@ -159,7 +157,7 @@ function admin_head(string $title): void
 </head><body><?php
 }
 
-const SCORE_LABELS = ['pass' => 'Проходит', 'border' => 'Ручная проверка', 'fail' => 'Не проходит'];
+const SCORE_LABELS = ['pass' => 'На регистрацию', 'fail' => 'Меньше 2 лет'];
 const APP_STATUSES = ['new' => 'Новая', 'review' => 'В работе', 'invited' => 'Приглашён', 'rejected' => 'Отказ', 'archived' => 'Архив'];
 
 function score_pill(?string $s): string
@@ -170,15 +168,15 @@ function score_pill(?string $s): string
 
 $flash = $_SESSION['flash'] ?? '';
 unset($_SESSION['flash']);
-$nav = ['dashboard' => 'Сводка', 'projects' => 'Проекты', 'applications' => 'Заявки', 'links' => 'Ссылки для каналов', 'sources' => 'Источники и CPA'];
+$nav = ['dashboard' => 'Сводка', 'projects' => 'Проекты', 'applications' => 'Анкеты', 'links' => 'Ссылки для каналов', 'sources' => 'Источники и CPA'];
 $navActive = ['project' => 'projects', 'application' => 'applications', 'link' => 'links'][$page] ?? $page;
-$newApps = (int)db()->query("SELECT COUNT(*) FROM applications WHERE status = 'new' AND stage = 'step2'")->fetchColumn();
+$newApps = (int)db()->query("SELECT COUNT(*) FROM applications WHERE date(created_at) = date('now','localtime')")->fetchColumn();
 
 admin_head($nav[$navActive] ?? 'Админка');
 ?>
 <div class="shell">
   <aside class="side">
-    <a class="side__logo" href="<?= h($self) ?>"><span class="logo__mark"></span>GO Flow</a>
+    <a class="side__logo" href="<?= h($self) ?>"><?= logo_svg("alogo") ?>GO Flow</a>
     <nav>
       <?php foreach ($nav as $k => $label): ?>
         <a class="<?= $navActive === $k ? 'is-on' : '' ?>" href="<?= h(aurl($k === 'dashboard' ? [] : ['page' => $k])) ?>"><?= h($label) ?><?php if ($k === 'applications' && $newApps): ?> <b class="badge"><?= $newApps ?></b><?php endif; ?></a>
@@ -201,24 +199,25 @@ case 'dashboard':
     $d7 = "date(created_at) >= date('now','localtime','-6 days')";
     $stats = [
         ['Открытых проектов', $q("SELECT COUNT(*) FROM projects WHERE status='open'")],
-        ['Анкет за 7 дней (шаг 1)', $q("SELECT COUNT(*) FROM applications WHERE $d7")],
-        ['Дошли до конца', $q("SELECT COUNT(*) FROM applications WHERE stage='step2' AND $d7")],
-        ['Проходят скоринг', $q("SELECT COUNT(*) FROM applications WHERE score='pass' AND $d7")],
+        ['Анкет за 7 дней', $q("SELECT COUNT(*) FROM applications WHERE $d7")],
+        ['Ушли на регистрацию', $q("SELECT COUNT(*) FROM applications WHERE score='pass' AND $d7")],
+        ['Меньше 2 лет опыта', $q("SELECT COUNT(*) FROM applications WHERE score='fail' AND $d7")],
     ];
     $recent = db()->query("SELECT a.*, TRIM(COALESCE(p.grade,'') || ' ' || COALESCE(p.role,'')) project_title FROM applications a LEFT JOIN projects p ON p.id=a.project_id ORDER BY a.id DESC LIMIT 8")->fetchAll();
     $top = array_slice(sources_report(date('Y-m-d', strtotime('-29 days')), date('Y-m-d')), 0, 6);
     ?>
     <div class="ahead"><h1>Сводка</h1><a class="abtn abtn--primary" href="<?= h(aurl(['page' => 'project', 'id' => 'new'])) ?>">+ Новый проект</a></div>
     <div class="kpis"><?php foreach ($stats as [$l, $v]): ?><div class="kpi"><b><?= $v ?></b><span><?= h($l) ?></span></div><?php endforeach; ?></div>
+    <p class="hint">Анкета на лендинге — два вопроса (направление и опыт). С опытом от 2 лет человек уходит на регистрацию на платформе goflow.godigital.rocks с UTM-метками. Сама регистрация видна уже в платформе.</p>
     <div class="grid2">
       <section class="card">
-        <div class="card__head"><h2>Последние заявки</h2><a href="<?= h(aurl(['page' => 'applications'])) ?>">Все →</a></div>
-        <?php if (!$recent): ?><p class="muted">Заявок пока нет.</p><?php else: ?>
+        <div class="card__head"><h2>Последние анкеты</h2><a href="<?= h(aurl(['page' => 'applications'])) ?>">Все →</a></div>
+        <?php if (!$recent): ?><p class="muted">Анкет пока нет.</p><?php else: ?>
         <table class="t"><tbody>
           <?php foreach ($recent as $r): ?>
           <tr onclick="location='<?= h(aurl(['page' => 'application', 'id' => $r['id']])) ?>'">
             <td><?= score_pill($r['score']) ?></td>
-            <td><b><?= h($r['contact']) ?></b><div class="muted"><?= h(DIRECTIONS[$r['direction']]['label'] ?? $r['direction']) ?><?= $r['project_title'] ? ' · ' . h($r['project_title']) : '' ?></div></td>
+            <td><b><?= h(DIRECTIONS[$r['direction']]['label'] ?? $r['direction']) ?> · <?= h(answer_label('years', $r['years'])) ?></b><?= $r['project_title'] ? '<div class="muted">' . h($r['project_title']) . '</div>' : '' ?></td>
             <td class="muted nowrap"><?= h($r['utm_source'] ?: '—') ?></td>
             <td class="muted nowrap"><?= h(date('d.m H:i', strtotime($r['created_at']))) ?></td>
           </tr>
@@ -229,9 +228,9 @@ case 'dashboard':
       <section class="card">
         <div class="card__head"><h2>Источники за 30 дней</h2><a href="<?= h(aurl(['page' => 'sources'])) ?>">Отчёт →</a></div>
         <?php if (!$top): ?><p class="muted">Данных пока нет. Создайте <a href="<?= h(aurl(['page' => 'links'])) ?>">ссылку для канала</a>.</p><?php else: ?>
-        <table class="t"><thead><tr><th>Канал</th><th class="r">Клики</th><th class="r">Анкеты</th><th class="r">Проходят</th><th class="r">CPA</th></tr></thead><tbody>
+        <table class="t"><thead><tr><th>Канал</th><th class="r">Клики</th><th class="r">Анкеты</th><th class="r">На регистрацию</th><th class="r">Цена перехода</th></tr></thead><tbody>
           <?php foreach ($top as $r): ?>
-          <tr><td><b><?= h($r['src']) ?></b><?= $r['camp'] ? '<div class="muted">' . h($r['camp']) . '</div>' : '' ?></td><td class="r"><?= (int)$r['clicks'] ?></td><td class="r"><?= (int)$r['step2'] ?></td><td class="r"><?= (int)$r['pass'] ?></td><td class="r"><?= $r['cpa'] ? fmt_rub($r['cpa']) . ' ₽' : '—' ?></td></tr>
+          <tr><td><b><?= h($r['src']) ?></b><?= $r['camp'] ? '<div class="muted">' . h($r['camp']) . '</div>' : '' ?></td><td class="r"><?= (int)$r['clicks'] ?></td><td class="r"><?= (int)$r['step1'] ?></td><td class="r"><?= (int)$r['pass'] ?></td><td class="r"><?= $r['cpa'] ? fmt_rub($r['cpa']) . ' ₽' : '—' ?></td></tr>
           <?php endforeach; ?>
         </tbody></table>
         <?php endif; ?>
@@ -255,7 +254,7 @@ case 'projects':
     <?php if (!cfg('platform.enabled')): ?><p class="hint">Синхронизация с платформой GO Flow выключена — проекты ведутся вручную. Когда у платформы появится API, заполните блок <code>platform</code> в config.php: проекты будут подтягиваться автоматически.</p><?php endif; ?>
     <section class="card card--flush">
       <table class="t t--hover">
-        <thead><tr><th>Статус</th><th>Проект</th><th>Ставка</th><th>Источник</th><th class="r">Заявки</th><th>Обновлён</th><th></th></tr></thead>
+        <thead><tr><th>Статус</th><th>Проект</th><th>Ставка</th><th>Источник</th><th class="r">Анкеты</th><th>Обновлён</th><th></th></tr></thead>
         <tbody>
         <?php foreach ($list as $p): ?>
           <tr>
@@ -379,13 +378,12 @@ case 'applications':
     $projOpts = [];
     foreach ($projectsAll as $p) $projOpts[$p['id']] = $p['title'] . ' (' . $p['direction_label'] . ')';
     ?>
-    <div class="ahead"><h1>Заявки <span class="muted">· <?= $total ?></span></h1>
+    <div class="ahead"><h1>Анкеты <span class="muted">· <?= $total ?></span></h1>
       <a class="abtn" href="<?= h(aurl(array_merge($_GET, ['page' => 'applications', 'export' => 'csv']))) ?>">Скачать CSV</a></div>
     <form class="filters" method="get">
       <input type="hidden" name="page" value="applications">
-      <input type="search" name="q" value="<?= h($_GET['q'] ?? '') ?>" placeholder="Контакт, стек, резюме…">
-      <?= $sel('score', SCORE_LABELS + ['none' => 'Только шаг 1'], 'Скоринг: все') ?>
-      <?= $sel('status', APP_STATUSES, 'Статус: все') ?>
+      <input type="search" name="q" value="<?= h($_GET['q'] ?? '') ?>" placeholder="Стек, кампания, заметки…">
+      <?= $sel('score', SCORE_LABELS, 'Результат: все') ?>
       <?= $sel('direction', $dirOpts, 'Направление: все') ?>
       <?= $sel('project_id', $projOpts, 'Проект: все') ?>
       <?= $sel('utm_source', array_combine($sources, $sources) ?: [], 'Канал: все') ?>
@@ -396,22 +394,20 @@ case 'applications':
     </form>
     <section class="card card--flush">
       <table class="t t--hover">
-        <thead><tr><th>#</th><th>Скоринг</th><th>Контакт</th><th>Направление / проект</th><th>Опыт</th><th class="r">Ставка</th><th>Канал</th><th>Статус</th><th>Дата</th></tr></thead>
+        <thead><tr><th>#</th><th>Результат</th><th>Направление / проект</th><th>Опыт</th><th>Стек</th><th>Канал</th><th>Дата</th></tr></thead>
         <tbody>
-        <?php foreach ($rows as $r): ?>
+        <?php foreach ($rows as $r): $st = json_decode($r['stack'] ?: '[]', true) ?: []; ?>
           <tr onclick="location='<?= h(aurl(['page' => 'application', 'id' => $r['id']])) ?>'">
             <td class="muted"><?= (int)$r['id'] ?></td>
             <td><?= score_pill($r['score']) ?></td>
-            <td><b><?= h($r['contact']) ?></b></td>
-            <td><?= h(DIRECTIONS[$r['direction']]['label'] ?? $r['direction']) ?><?= $r['project_title'] ? '<div class="muted">' . h($r['project_title']) . '</div>' : '' ?></td>
-            <td class="nowrap"><?= h(answer_label('years', $r['years'])) ?> л.</td>
-            <td class="r nowrap"><?= $r['rate'] ? fmt_rub($r['rate']) : '—' ?></td>
+            <td><b><?= h(DIRECTIONS[$r['direction']]['label'] ?? $r['direction']) ?></b><?= $r['project_title'] ? '<div class="muted">' . h($r['project_title']) . '</div>' : '' ?></td>
+            <td class="nowrap"><?= h(answer_label('years', $r['years'])) ?></td>
+            <td class="muted"><?= h(implode(', ', array_slice($st, 0, 5))) ?: '—' ?></td>
             <td><?= h($r['utm_source'] ?: '—') ?><?= $r['utm_campaign'] ? '<div class="muted">' . h($r['utm_campaign']) . '</div>' : '' ?></td>
-            <td><span class="pill pill--s-<?= h($r['status']) ?>"><?= h(APP_STATUSES[$r['status']] ?? $r['status']) ?></span></td>
             <td class="muted nowrap"><?= h(date('d.m.Y H:i', strtotime($r['created_at']))) ?></td>
           </tr>
         <?php endforeach; ?>
-        <?php if (!$rows): ?><tr><td colspan="9" class="muted">Ничего не найдено.</td></tr><?php endif; ?>
+        <?php if (!$rows): ?><tr><td colspan="7" class="muted">Ничего не найдено.</td></tr><?php endif; ?>
         </tbody>
       </table>
     </section>
@@ -422,22 +418,14 @@ case 'application':
     $st = db()->prepare("SELECT a.*, TRIM(COALESCE(p.grade,'') || ' ' || COALESCE(p.role,'')) project_title, p.id pid FROM applications a LEFT JOIN projects p ON p.id=a.project_id WHERE a.id = ?");
     $st->execute([(int)($_GET['id'] ?? 0)]);
     $a = $st->fetch();
-    if (!$a) { echo '<p>Заявка не найдена.</p>'; break; }
+    if (!$a) { echo '<p>Анкета не найдена.</p>'; break; }
     $stack = json_decode($a['stack'] ?: '[]', true) ?: [];
-    $reasons = json_decode($a['score_reasons'] ?: '[]', true) ?: [];
-    $contact = $a['contact'];
-    $contactLink = str_contains($contact, '@') && !str_starts_with($contact, '@') ? 'mailto:' . $contact : 'https://t.me/' . ltrim($contact, '@');
     $rows = [
         'Направление' => DIRECTIONS[$a['direction']]['label'] ?? $a['direction'],
-        'Лет на стеке' => answer_label('years', $a['years']),
+        'Опыт на стеке' => answer_label('years', $a['years']),
         'Стек' => $stack ? implode(', ', $stack) : '—',
-        'Практика за 24 мес' => answer_label('handson', $a['handson']),
-        'Средний срок на месте' => answer_label('tenure', $a['tenure']),
-        'Оформление' => answer_label('legal', $a['legal']),
-        'Пересечение с МСК' => answer_label('overlap', $a['overlap']),
-        'Ожидаемая ставка' => $a['rate'] ? fmt_rub($a['rate']) . ' ₽/час' : '—',
-        'Занятость' => answer_label('workload', $a['workload']),
-        'Подписка на рассылку' => $a['consent_ads'] ? 'да' : 'нет',
+        'Результат' => SCORE_LABELS[$a['score']] ?? '—',
+        'Дата' => $a['created_at'],
     ];
     $src = [
         'utm_source' => $a['utm_source'], 'utm_medium' => $a['utm_medium'], 'utm_campaign' => $a['utm_campaign'],
@@ -445,31 +433,21 @@ case 'application':
         'Первая страница' => $a['landing_url'], 'Referrer' => $a['referrer'],
     ];
     ?>
-    <div class="ahead"><h1>Заявка #<?= (int)$a['id'] ?> <?= score_pill($a['score']) ?></h1><a class="abtn" href="<?= h(aurl(['page' => 'applications'])) ?>">← Все заявки</a></div>
+    <div class="ahead"><h1>Анкета #<?= (int)$a['id'] ?> <?= score_pill($a['score']) ?></h1><a class="abtn" href="<?= h(aurl(['page' => 'applications'])) ?>">← Все анкеты</a></div>
     <div class="grid2 grid2--wide">
       <section class="card">
-        <h2><a href="<?= h($contactLink) ?>" target="_blank"><?= h($contact) ?></a></h2>
-        <?php if ($a['project_title']): ?><p>Отклик на проект: <a href="<?= h(aurl(['page' => 'project', 'id' => $a['pid']])) ?>"><?= h($a['project_title']) ?></a></p><?php endif; ?>
-        <?php if ($a['resume']): ?><p>Резюме: <a href="<?= h(preg_match('#^https?://#i', $a['resume']) ? $a['resume'] : 'https://' . $a['resume']) ?>" target="_blank" rel="noopener noreferrer"><?= h($a['resume']) ?></a></p><?php endif; ?>
+        <?php if ($a['project_title']): ?><p>Проект: <a href="<?= h(aurl(['page' => 'project', 'id' => $a['pid']])) ?>"><?= h($a['project_title']) ?></a></p><?php endif; ?>
         <dl class="dl"><?php foreach ($rows as $k => $val): ?><dt><?= h($k) ?></dt><dd><?= h($val) ?></dd><?php endforeach; ?></dl>
-        <?php if ($reasons): ?><div class="hint hint--warn"><b>Почему не «проходит»:</b><br><?= implode('<br>', array_map('h', $reasons)) ?></div><?php endif; ?>
-        <p class="muted">Создана <?= h($a['created_at']) ?> · обновлена <?= h($a['updated_at']) ?> · <?= $a['stage'] === 'step2' ? 'анкета заполнена полностью' : 'заполнен только шаг 1' ?></p>
+        <form method="post">
+          <?= csrf_field() ?><input type="hidden" name="action" value="app_update"><input type="hidden" name="id" value="<?= (int)$a['id'] ?>">
+          <label class="af"><span>Заметки</span><textarea name="notes" rows="4"><?= h($a['notes']) ?></textarea></label>
+          <button class="abtn abtn--primary" type="submit">Сохранить</button>
+        </form>
       </section>
-      <div>
-        <section class="card">
-          <h2>Работа с заявкой</h2>
-          <form method="post">
-            <?= csrf_field() ?><input type="hidden" name="action" value="app_update"><input type="hidden" name="id" value="<?= (int)$a['id'] ?>">
-            <label class="af"><span>Статус</span><select name="status"><?php foreach (APP_STATUSES as $k => $l): ?><option value="<?= $k ?>"<?= $a['status'] === $k ? ' selected' : '' ?>><?= h($l) ?></option><?php endforeach; ?></select></label>
-            <label class="af"><span>Заметки</span><textarea name="notes" rows="5"><?= h($a['notes']) ?></textarea></label>
-            <button class="abtn abtn--primary" type="submit">Сохранить</button>
-          </form>
-        </section>
-        <section class="card">
-          <h2>Источник</h2>
-          <dl class="dl dl--sm"><?php foreach ($src as $k => $val): if (!$val) continue; ?><dt><?= h($k) ?></dt><dd><?= h($val) ?></dd><?php endforeach; ?></dl>
-        </section>
-      </div>
+      <section class="card">
+        <h2>Источник</h2>
+        <dl class="dl dl--sm"><?php foreach ($src as $k => $val): if (!$val) continue; ?><dt><?= h($k) ?></dt><dd><?= h($val) ?></dd><?php endforeach; ?></dl>
+      </section>
     </div>
     <?php
     break;
@@ -561,31 +539,32 @@ case 'sources':
     $from = preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['from'] ?? '') ? $_GET['from'] : date('Y-m-d', strtotime('-29 days'));
     $to = preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['to'] ?? '') ? $_GET['to'] : date('Y-m-d');
     $rep = sources_report($from, $to);
-    $tot = ['clicks' => 0, 'visitors' => 0, 'step1' => 0, 'step2' => 0, 'pass' => 0, 'border' => 0, 'fail' => 0, 'cost' => 0];
+    $tot = ['clicks' => 0, 'visitors' => 0, 'step1' => 0, 'pass' => 0, 'fail' => 0, 'cost' => 0];
     foreach ($rep as $r) foreach ($tot as $k => $_) $tot[$k] += (int)$r[$k];
+    $money = fn($v) => $v ? fmt_rub($v) . ' ₽' : '—';
     ?>
     <div class="ahead"><h1>Источники и CPA</h1>
       <form class="filters" method="get"><input type="hidden" name="page" value="sources">
         <input type="date" name="from" value="<?= h($from) ?>"><input type="date" name="to" value="<?= h($to) ?>"><button class="abtn" type="submit">Показать</button></form></div>
-    <p class="hint">Клики — по коротким ссылкам. Анкеты — по UTM, с которыми человек пришёл впервые за сессию. CPL = расход / дошедшие до конца анкеты, CPA = расход / прошедшие скоринг. Расход берётся из стоимости ссылок.</p>
+    <p class="hint">Клики — по коротким ссылкам. Анкеты — по UTM, с которыми человек пришёл впервые за сессию. «На регистрацию» — ушли на goflow.godigital.rocks/start. Цена анкеты = расход / анкеты, цена перехода = расход / ушедшие на регистрацию. Завершённые регистрации считаются в платформе: она получает те же UTM.</p>
     <section class="card card--flush">
       <table class="t">
-        <thead><tr><th>Канал</th><th>Кампания</th><th class="r">Клики</th><th class="r">Уник.</th><th class="r">Шаг 1</th><th class="r">Анкета целиком</th><th class="r">Проходят</th><th class="r">Ручная</th><th class="r">Нет</th><th class="r">Расход</th><th class="r">CPL</th><th class="r">CPA</th></tr></thead>
+        <thead><tr><th>Канал</th><th>Кампания</th><th class="r">Клики</th><th class="r">Уник.</th><th class="r">Анкеты</th><th class="r">На регистрацию</th><th class="r">Меньше 2 лет</th><th class="r">Расход</th><th class="r">Цена анкеты</th><th class="r">Цена перехода</th></tr></thead>
         <tbody>
         <?php foreach ($rep as $r): ?>
           <tr>
             <td><a class="strong" href="<?= h(aurl(['page' => 'applications', 'utm_source' => $r['src'] === '(прямой / без UTM)' ? '' : $r['src'], 'from' => $from, 'to' => $to])) ?>"><?= h($r['src']) ?></a></td>
             <td class="muted"><?= h($r['camp'] ?: '—') ?></td>
-            <td class="r"><?= (int)$r['clicks'] ?></td><td class="r"><?= (int)$r['visitors'] ?></td><td class="r"><?= (int)$r['step1'] ?></td><td class="r"><?= (int)$r['step2'] ?></td>
-            <td class="r strong"><?= (int)$r['pass'] ?></td><td class="r"><?= (int)$r['border'] ?></td><td class="r"><?= (int)$r['fail'] ?></td>
-            <td class="r nowrap"><?= $r['cost'] ? fmt_rub($r['cost']) . ' ₽' : '—' ?></td>
-            <td class="r nowrap"><?= $r['cpl'] ? fmt_rub($r['cpl']) . ' ₽' : '—' ?></td>
-            <td class="r nowrap strong"><?= $r['cpa'] ? fmt_rub($r['cpa']) . ' ₽' : '—' ?></td>
+            <td class="r"><?= (int)$r['clicks'] ?></td><td class="r"><?= (int)$r['visitors'] ?></td><td class="r"><?= (int)$r['step1'] ?></td>
+            <td class="r strong"><?= (int)$r['pass'] ?></td><td class="r"><?= (int)$r['fail'] ?></td>
+            <td class="r nowrap"><?= $money($r['cost']) ?></td>
+            <td class="r nowrap"><?= $money($r['cpl']) ?></td>
+            <td class="r nowrap strong"><?= $money($r['cpa']) ?></td>
           </tr>
         <?php endforeach; ?>
-        <?php if (!$rep): ?><tr><td colspan="12" class="muted">За период данных нет.</td></tr><?php endif; ?>
+        <?php if (!$rep): ?><tr><td colspan="10" class="muted">За период данных нет.</td></tr><?php endif; ?>
         </tbody>
-        <?php if ($rep): ?><tfoot><tr><td colspan="2">Итого</td><td class="r"><?= $tot['clicks'] ?></td><td class="r"><?= $tot['visitors'] ?></td><td class="r"><?= $tot['step1'] ?></td><td class="r"><?= $tot['step2'] ?></td><td class="r"><?= $tot['pass'] ?></td><td class="r"><?= $tot['border'] ?></td><td class="r"><?= $tot['fail'] ?></td><td class="r nowrap"><?= $tot['cost'] ? fmt_rub($tot['cost']) . ' ₽' : '—' ?></td><td class="r nowrap"><?= ($tot['cost'] && $tot['step2']) ? fmt_rub((int)round($tot['cost'] / $tot['step2'])) . ' ₽' : '—' ?></td><td class="r nowrap"><?= ($tot['cost'] && $tot['pass']) ? fmt_rub((int)round($tot['cost'] / $tot['pass'])) . ' ₽' : '—' ?></td></tr></tfoot><?php endif; ?>
+        <?php if ($rep): ?><tfoot><tr><td colspan="2">Итого</td><td class="r"><?= $tot['clicks'] ?></td><td class="r"><?= $tot['visitors'] ?></td><td class="r"><?= $tot['step1'] ?></td><td class="r"><?= $tot['pass'] ?></td><td class="r"><?= $tot['fail'] ?></td><td class="r nowrap"><?= $money($tot['cost']) ?></td><td class="r nowrap"><?= $money(($tot['cost'] && $tot['step1']) ? (int)round($tot['cost'] / $tot['step1']) : 0) ?></td><td class="r nowrap"><?= $money(($tot['cost'] && $tot['pass']) ? (int)round($tot['cost'] / $tot['pass']) : 0) ?></td></tr></tfoot><?php endif; ?>
       </table>
     </section>
     <?php

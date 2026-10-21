@@ -11,9 +11,10 @@ function notify_application(int $id): void
     $st->execute([$id]);
     $a = $st->fetch();
     if (!$a) return;
-    $icon = ['pass' => '🟢', 'border' => '🟡', 'fail' => '⚪️'][$a['score'] ?? ''] ?? '•';
-    $text = $icon . ' Заявка #' . $id . ' · ' . (DIRECTIONS[$a['direction']]['label'] ?? $a['direction'])
-        . "\nКонтакт: " . $a['contact']
+    $icon = $a['score'] === 'pass' ? '🟢' : '⚪️';
+    $text = $icon . ' Анкета #' . $id . ' · ' . (DIRECTIONS[$a['direction']]['label'] ?? $a['direction'])
+        . ' · ' . answer_label('years', $a['years'])
+        . ($a['score'] === 'pass' ? ' → ушёл на регистрацию' : ' (меньше 2 лет)')
         . ($a['role'] ? "\nПроект: " . trim($a['grade'] . ' ' . $a['role']) : '')
         . "\nИсточник: " . ($a['utm_source'] ?: 'без UTM') . ($a['utm_campaign'] ? ' / ' . $a['utm_campaign'] : '')
         . "\n" . base_url() . '/admin/?page=application&id=' . $id;
