@@ -97,7 +97,7 @@
     }
     return '<article class="pcard' + (showMatch && m === p.stack.length && m > 0 ? ' is-top' : '') + '">' +
       '<div class="pcard__top">' +
-        '<div class="pcard__tags">' + (p.isExample && CONFIG.demo ? '<span class="tag tag--warn">Пример</span>' : '') +
+        '<div class="pcard__tags">' + (p.isExample ? '<span class="tag tag--warn">Пример</span>' : '') +
           (p.domain ? '<span class="tag">' + esc(p.domain) + '</span>' : '') + '</div>' +
         '<span class="grade">' + esc(p.grade) + '</span>' +
       '</div>' +

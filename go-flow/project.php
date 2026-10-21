@@ -54,7 +54,7 @@ $sections = [
     <div class="phero__grid">
       <div>
         <div class="phero__tags">
-          <?php if ($p['is_example'] && is_demo()): ?><span class="tag tag--warn">Пример карточки</span><?php endif; ?>
+          <?php if ($p['is_example']): ?><span class="tag tag--warn">Пример карточки</span><?php endif; ?>
           <?php if ($p['domain']): ?><span class="tag"><?= h($p['domain']) ?></span><?php endif; ?>
           <span class="tag"><?= h($p['direction_label']) ?></span>
         </div>

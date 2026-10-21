@@ -64,7 +64,7 @@ function view_footer(): void
   <div class="wrap foot__in">
     <div>
       <a class="logo logo--foot" href="<?= h(url('')) ?>"><?= logo_svg() ?><span class="logo__text">GO&nbsp;Flow</span></a>
-      <p>Платформа проектов для IT-специалистов. Оператор — <?= h(cfg('operator.name', 'GO Digital')) ?>, <?= h(cfg('operator.ad_name', '')) ?>, ИНН&nbsp;<?= h(cfg('operator.inn', '')) ?> <?= tbd('юрлицо оператора') ?></p>
+      <p>Платформа проектов для IT-специалистов. Оператор — <?= h(cfg('operator.name', 'GO Digital')) ?>, <?= h(cfg('operator.ad_name', '')) ?>, ИНН&nbsp;<?= h(cfg('operator.inn', '')) ?></p>
     </div>
     <ul class="foot__links foot__dirs">
       <?php foreach (DIRECTIONS as $k => $d): ?><li><a href="<?= h(dir_url($k)) ?>">Проекты для <?= h($d['noun']) ?></a></li><?php endforeach; ?>
@@ -125,7 +125,8 @@ function view_apply(?array $project = null): void
         <li><b>Стек и опыт</b><span>здесь, 15 секунд</span></li>
         <li><b>Регистрация</b><span>e-mail или телефон с подтверждением</span></li>
         <li><b>Резюме и документы</b><span>подтверждаем опыт один раз</span></li>
-        <li><b>Отклик на проекты</b><span>старт за <?= h(cfg('hero.start', '1–3 недели')) ?></span></li>
+        <li><b>Отклик и ассесмент</b><span>знакомство с заказчиком</span></li>
+        <li><b>Старт проекта</b><span>за <?= h(cfg('hero.start', '1–3 недели')) ?>, выплаты раз в месяц</span></li>
       </ol>
     </div>
 
