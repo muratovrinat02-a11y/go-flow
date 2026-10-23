@@ -87,8 +87,10 @@ function view_footer(): void
 function view_boot(array $page): void
 {
     $dirs = [];
-    foreach (DIRECTIONS as $k => $d) $dirs[$k] = ['label' => $d['label'], 'stack' => $d['stack']];
-    $data = ['config' => public_config(), 'dirs' => $dirs, 'page' => $page];
+    foreach (DIRECTIONS as $k => $d) $dirs[$k] = ['label' => $d['label'], 'stack' => $d['stack'], 'role' => $d['role']];
+    $roles = [];
+    foreach (ROLES as $k => $r) $roles[$k] = ['label' => $r['label'], 'specs' => $r['specs']];
+    $data = ['config' => public_config(), 'dirs' => $dirs, 'roles' => $roles, 'page' => $page];
     echo '<script>window.GF=' . json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) . ';</script>' . "\n";
     echo '<script src="' . h(asset('app.js')) . '" defer></script>' . "\n</body>\n</html>";
 }
@@ -101,7 +103,7 @@ function view_facts(string $class = ''): void
 <div class="facts <?= h($class) ?>">
   <div class="facts__rate"><span>до</span> <?= h($hero['rate'] ?? '3 000') ?>&nbsp;₽<small>/час</small></div>
   <ul class="facts__list">
-    <li><b>до <?= h($hero['month'] ?? '450 000') ?>&nbsp;₽/мес</b><span>при полной загрузке</span></li>
+    <li><b>до <?= h($hero['month'] ?? '500 000') ?>&nbsp;₽/мес</b><span>при полной загрузке</span></li>
     <li><b>старт за <?= h($hero['start'] ?? '1–3 недели') ?></b><span>от регистрации до проекта</span></li>
     <li><b>долгосрочные проекты</b><span>у крупных компаний</span></li>
   </ul>
@@ -113,16 +115,16 @@ function view_facts(string $class = ''): void
 function view_apply(?array $project = null): void
 {
     $rate = $project ? project_rate($project) : null;
-    $dirSel = $project['direction'] ?? '';
+    $roleSel = $project ? (DIRECTIONS[$project['direction']]['role'] ?? '') : '';
     ?>
 <section class="section section--dark" id="apply">
   <div class="wrap apply">
     <div class="apply__text">
       <p class="eyebrow eyebrow--dark"><?= $project ? 'Отклик на проект' : 'Регистрация' ?></p>
       <h2><?= $project ? 'Откликнуться на «' . h($project['title']) . '»' : 'Зарегистрируйтесь и откликайтесь на проекты' ?></h2>
-      <p class="lead lead--dark">Два вопроса — и переходите к регистрации на платформе GO&nbsp;Flow.</p>
+      <p class="lead lead--dark">Два вопроса — и переходите к регистрации специалиста на платформе GO&nbsp;Flow.</p>
       <ol class="apply__steps">
-        <li><b>Стек и опыт</b><span>здесь, 15 секунд</span></li>
+        <li><b>Специальность и опыт</b><span>здесь, 15 секунд</span></li>
         <li><b>Регистрация</b><span>e-mail или телефон с подтверждением</span></li>
         <li><b>Резюме и документы</b><span>подтверждаем опыт один раз</span></li>
         <li><b>Отклик и ассесмент</b><span>знакомство с заказчиком</span></li>
@@ -142,19 +144,19 @@ function view_apply(?array $project = null): void
         <div class="hp" aria-hidden="true"><label>Сайт <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
 
         <div class="field">
-          <span>Ваше направление</span>
+          <span>Ваша специальность</span>
           <div class="seg seg--dirs" id="fDirs">
-            <?php foreach (DIRECTIONS as $k => $d): ?>
-              <label><input type="radio" name="direction" value="<?= h($k) ?>" required<?= $dirSel === $k ? ' checked' : '' ?>><b><?= h($d['label']) ?></b></label>
+            <?php foreach (ROLES as $k => $r): ?>
+              <label><input type="radio" name="direction" value="<?= h($k) ?>" required<?= $roleSel === $k ? ' checked' : '' ?>><b><?= h($r['label']) ?></b></label>
             <?php endforeach; ?>
           </div>
         </div>
-        <div class="field" id="stackField"<?= $dirSel ? '' : ' hidden' ?>>
-          <span>Основной стек <small>— по желанию</small></span>
+        <div class="field" id="stackField"<?= $roleSel ? '' : ' hidden' ?>>
+          <span>Специализация <small>— по желанию, можно несколько</small></span>
           <div class="tagpick" id="stackPick"></div>
         </div>
         <div class="field">
-          <span>Сколько лет коммерческого опыта на этом стеке</span>
+          <span>Сколько лет коммерческого опыта по специальности</span>
           <div class="seg">
             <?php foreach (YEARS_OPTIONS as $k => $l): ?>
               <label><input type="radio" name="years" value="<?= h($k) ?>" required><b><?= h($l) ?></b></label>
@@ -169,7 +171,7 @@ function view_apply(?array $project = null): void
       <div class="result" id="resLow" hidden>
         <span class="result__icon result__icon--info" aria-hidden="true"></span>
         <h3>Пока рано — но мы будем рады вам позже</h3>
-        <p>Сейчас проекты на платформе рассчитаны на специалистов с коммерческим опытом от 2 лет на основном стеке. Возвращайтесь, когда наберёте опыт: проекты будут здесь.</p>
+        <p>Сейчас проекты на платформе рассчитаны на специалистов с коммерческим опытом от 2 лет по специальности. Возвращайтесь, когда наберёте опыт: проекты будут здесь.</p>
         <button class="btn btn--ghost btn--block" type="button" id="resBack">Изменить ответ</button>
       </div>
       <div class="result" id="resGo" hidden>

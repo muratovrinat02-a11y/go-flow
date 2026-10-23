@@ -217,7 +217,7 @@ case 'dashboard':
           <?php foreach ($recent as $r): ?>
           <tr onclick="location='<?= h(aurl(['page' => 'application', 'id' => $r['id']])) ?>'">
             <td><?= score_pill($r['score']) ?></td>
-            <td><b><?= h(DIRECTIONS[$r['direction']]['label'] ?? $r['direction']) ?> · <?= h(answer_label('years', $r['years'])) ?></b><?= $r['project_title'] ? '<div class="muted">' . h($r['project_title']) . '</div>' : '' ?></td>
+            <td><b><?= h(role_label($r['direction'])) ?> · <?= h(answer_label('years', $r['years'])) ?></b><?= $r['project_title'] ? '<div class="muted">' . h($r['project_title']) . '</div>' : '' ?></td>
             <td class="muted nowrap"><?= h($r['utm_source'] ?: '—') ?></td>
             <td class="muted nowrap"><?= h(date('d.m H:i', strtotime($r['created_at']))) ?></td>
           </tr>
@@ -374,7 +374,7 @@ case 'applications':
         foreach ($opts as $k => $l) $o .= '<option value="' . h((string)$k) . '"' . ((string)$k === $cur ? ' selected' : '') . '>' . h($l) . '</option>';
         return $o . '</select>';
     };
-    $dirOpts = array_map(fn($d) => $d['label'], DIRECTIONS);
+    $dirOpts = array_map(fn($d) => $d['label'], ROLES);
     $projOpts = [];
     foreach ($projectsAll as $p) $projOpts[$p['id']] = $p['title'] . ' (' . $p['direction_label'] . ')';
     ?>
@@ -384,7 +384,7 @@ case 'applications':
       <input type="hidden" name="page" value="applications">
       <input type="search" name="q" value="<?= h($_GET['q'] ?? '') ?>" placeholder="Стек, кампания, заметки…">
       <?= $sel('score', SCORE_LABELS, 'Результат: все') ?>
-      <?= $sel('direction', $dirOpts, 'Направление: все') ?>
+      <?= $sel('direction', $dirOpts, 'Специальность: все') ?>
       <?= $sel('project_id', $projOpts, 'Проект: все') ?>
       <?= $sel('utm_source', array_combine($sources, $sources) ?: [], 'Канал: все') ?>
       <input type="date" name="from" value="<?= h($_GET['from'] ?? '') ?>" onchange="this.form.submit()">
@@ -394,13 +394,13 @@ case 'applications':
     </form>
     <section class="card card--flush">
       <table class="t t--hover">
-        <thead><tr><th>#</th><th>Результат</th><th>Направление / проект</th><th>Опыт</th><th>Стек</th><th>Канал</th><th>Дата</th></tr></thead>
+        <thead><tr><th>#</th><th>Результат</th><th>Специальность / проект</th><th>Опыт</th><th>Специализация</th><th>Канал</th><th>Дата</th></tr></thead>
         <tbody>
         <?php foreach ($rows as $r): $st = json_decode($r['stack'] ?: '[]', true) ?: []; ?>
           <tr onclick="location='<?= h(aurl(['page' => 'application', 'id' => $r['id']])) ?>'">
             <td class="muted"><?= (int)$r['id'] ?></td>
             <td><?= score_pill($r['score']) ?></td>
-            <td><b><?= h(DIRECTIONS[$r['direction']]['label'] ?? $r['direction']) ?></b><?= $r['project_title'] ? '<div class="muted">' . h($r['project_title']) . '</div>' : '' ?></td>
+            <td><b><?= h(role_label($r['direction'])) ?></b><?= $r['project_title'] ? '<div class="muted">' . h($r['project_title']) . '</div>' : '' ?></td>
             <td class="nowrap"><?= h(answer_label('years', $r['years'])) ?></td>
             <td class="muted"><?= h(implode(', ', array_slice($st, 0, 5))) ?: '—' ?></td>
             <td><?= h($r['utm_source'] ?: '—') ?><?= $r['utm_campaign'] ? '<div class="muted">' . h($r['utm_campaign']) . '</div>' : '' ?></td>
@@ -421,9 +421,9 @@ case 'application':
     if (!$a) { echo '<p>Анкета не найдена.</p>'; break; }
     $stack = json_decode($a['stack'] ?: '[]', true) ?: [];
     $rows = [
-        'Направление' => DIRECTIONS[$a['direction']]['label'] ?? $a['direction'],
-        'Опыт на стеке' => answer_label('years', $a['years']),
-        'Стек' => $stack ? implode(', ', $stack) : '—',
+        'Специальность' => role_label($a['direction']),
+        'Опыт по специальности' => answer_label('years', $a['years']),
+        'Специализация' => $stack ? implode(', ', $stack) : '—',
         'Результат' => SCORE_LABELS[$a['score']] ?? '—',
         'Дата' => $a['created_at'],
     ];
@@ -546,7 +546,7 @@ case 'sources':
     <div class="ahead"><h1>Источники и CPA</h1>
       <form class="filters" method="get"><input type="hidden" name="page" value="sources">
         <input type="date" name="from" value="<?= h($from) ?>"><input type="date" name="to" value="<?= h($to) ?>"><button class="abtn" type="submit">Показать</button></form></div>
-    <p class="hint">Клики — по коротким ссылкам. Анкеты — по UTM, с которыми человек пришёл впервые за сессию. «На регистрацию» — ушли на goflow.godigital.rocks/start. Цена анкеты = расход / анкеты, цена перехода = расход / ушедшие на регистрацию. Завершённые регистрации считаются в платформе: она получает те же UTM.</p>
+    <p class="hint">Клики — по коротким ссылкам. Анкеты — по UTM, с которыми человек пришёл впервые за сессию. «На регистрацию» — ушли на страницу регистрации специалиста на платформе. Цена анкеты = расход / анкеты, цена перехода = расход / ушедшие на регистрацию. Завершённые регистрации считаются в платформе: она получает те же UTM.</p>
     <section class="card card--flush">
       <table class="t">
         <thead><tr><th>Канал</th><th>Кампания</th><th class="r">Клики</th><th class="r">Уник.</th><th class="r">Анкеты</th><th class="r">На регистрацию</th><th class="r">Меньше 2 лет</th><th class="r">Расход</th><th class="r">Цена анкеты</th><th class="r">Цена перехода</th></tr></thead>

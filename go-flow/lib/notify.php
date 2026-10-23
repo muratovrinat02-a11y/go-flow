@@ -12,7 +12,7 @@ function notify_application(int $id): void
     $a = $st->fetch();
     if (!$a) return;
     $icon = $a['score'] === 'pass' ? '🟢' : '⚪️';
-    $text = $icon . ' Анкета #' . $id . ' · ' . (DIRECTIONS[$a['direction']]['label'] ?? $a['direction'])
+    $text = $icon . ' Анкета #' . $id . ' · ' . role_label($a['direction'])
         . ' · ' . answer_label('years', $a['years'])
         . ($a['score'] === 'pass' ? ' → ушёл на регистрацию' : ' (меньше 2 лет)')
         . ($a['role'] ? "\nПроект: " . trim($a['grade'] . ' ' . $a['role']) : '')

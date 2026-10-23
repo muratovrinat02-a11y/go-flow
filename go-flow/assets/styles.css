@@ -565,3 +565,5 @@ svg.logo__mark::before, svg.logo__mark::after { display: none; }
 .facts__list span { font-size: 14px; }
 @media (min-width: 560px) { .facts__rate { padding-right: 28px; border-right: 1px solid rgba(255,255,255,.12); } .facts--light .facts__rate { border-right-color: var(--line); } }
 .steps--6 { } @media (min-width: 1080px) { .steps--6 { grid-template-columns: repeat(3, 1fr); } }
+.faq details p + p, .faq details ul { margin-top: -10px; }
+.faq details ul { padding: 0 0 22px 20px; color: var(--muted); max-width: 64ch; display: grid; gap: 6px; }

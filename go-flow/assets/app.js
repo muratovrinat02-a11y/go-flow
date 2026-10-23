@@ -5,6 +5,7 @@
   var GF = window.GF || {};
   var CONFIG = GF.config || {};
   var DIRS = GF.dirs || {};
+  var ROLES = GF.roles || {};
   var PAGE = GF.page || { type: 'landing', projects: [] };
   var PROJECTS = PAGE.projects || [];
 
@@ -221,7 +222,7 @@
 
   /* ================= ФОРМА: стек и опыт → регистрация ================= */
   var form = $('#form');
-  var picked = myStack.slice();
+  var picked = [];
 
   function setFormProject(p) {
     var ctx = $('#formCtx');
@@ -236,15 +237,16 @@
       }
     }
     if (p) {
-      var r = form.querySelector('input[name="direction"][value="' + p.direction + '"]');
-      if (r && !form.querySelector('input[name="direction"]:checked')) { r.checked = true; renderStackPick(p.direction); }
+      var role = DIRS[p.direction] && DIRS[p.direction].role;
+      var r = role && form.querySelector('input[name="direction"][value="' + role + '"]');
+      if (r && !form.querySelector('input[name="direction"]:checked')) { r.checked = true; renderStackPick(role); }
     }
   }
 
   function renderStackPick(dir) {
     var box = $('#stackPick'), field = $('#stackField');
     if (!box) return;
-    var list = (DIRS[dir] && DIRS[dir].stack) ? DIRS[dir].stack.slice() : [];
+    var list = (ROLES[dir] && ROLES[dir].specs) ? ROLES[dir].specs.slice() : [];
     field.hidden = !list.length;
     box.innerHTML = list.map(function (s) {
       return '<button type="button" aria-pressed="' + (picked.indexOf(s) > -1) + '">' + esc(s) + '</button>';
@@ -253,8 +255,8 @@
 
   if (form) {
     var checkedDir = form.querySelector('input[name="direction"]:checked');
-    if (!checkedDir && PAGE.dir) {
-      checkedDir = form.querySelector('input[name="direction"][value="' + PAGE.dir + '"]');
+    if (!checkedDir && PAGE.dir && DIRS[PAGE.dir]) {
+      checkedDir = form.querySelector('input[name="direction"][value="' + DIRS[PAGE.dir].role + '"]');
       if (checkedDir) checkedDir.checked = true;
     }
     if (checkedDir) renderStackPick(checkedDir.value);
@@ -288,7 +290,7 @@
         var seg = form.querySelector('input[name="' + x[0] + '"]').closest('.seg');
         seg.classList.toggle('is-bad', !x[1]); if (!x[1]) bad = true;
       });
-      if (bad) { var err = $('#err'); err.hidden = false; err.textContent = 'Выберите направление и опыт.'; return; }
+      if (bad) { var err = $('#err'); err.hidden = false; err.textContent = 'Выберите специальность и опыт.'; return; }
 
       var data = { direction: dir.value, years: years.value, stack: picked, project_id: $('#fProject').value,
         website: form.website.value, variant: PAGE.variant || '', page_dir: PAGE.dir || (PAGE.project ? PAGE.project.direction : '') };

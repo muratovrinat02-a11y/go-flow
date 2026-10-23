@@ -115,7 +115,7 @@ function logo_svg(string $class = 'logo__mark'): string
 /** Ссылка на регистрацию на платформе с UTM и контекстом анкеты. */
 function register_url(array $params = []): string
 {
-    $base = (string)cfg('register_url', 'https://goflow.godigital.rocks/start');
+    $base = (string)cfg('register_url', 'https://goflow.godigital.rocks/specialist/register');
     $params = array_filter($params, fn($v) => $v !== null && $v !== '');
     return $params ? $base . (strpos($base, '?') === false ? '?' : '&') . http_build_query($params) : $base;
 }
@@ -153,7 +153,7 @@ function public_config(): array
         'apiApply' => url('api/apply.php'),
         'ymId' => (string)cfg('ym_id', ''),
         'vkPixelId' => (string)cfg('vk_pixel_id', ''),
-        'registerUrl' => (string)cfg('register_url', 'https://goflow.godigital.rocks/start'),
+        'registerUrl' => (string)cfg('register_url', 'https://goflow.godigital.rocks/specialist/register'),
         'analyticsAfterConsent' => (bool)cfg('analytics_after_consent', false),
     ];
 }

@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 const DIRECTIONS = [
-    'python'  => ['label' => 'Python',             'noun' => 'Python-разработчиков',  'stack' => ['Python', 'FastAPI', 'Django', 'PostgreSQL', 'Docker', 'Kafka', 'Redis', 'Celery']],
-    'go'      => ['label' => 'Go',                 'noun' => 'Go-разработчиков',      'stack' => ['Go', 'PostgreSQL', 'Kafka', 'gRPC', 'Kubernetes', 'Redis', 'ClickHouse']],
-    'dotnet'  => ['label' => '.NET',               'noun' => '.NET-разработчиков',    'stack' => ['C#', '.NET', 'ASP.NET Core', 'EF Core', 'PostgreSQL', 'MS SQL', 'RabbitMQ']],
-    'react'   => ['label' => 'React',              'noun' => 'React-разработчиков',   'stack' => ['React', 'TypeScript', 'Next.js', 'Redux', 'Storybook', 'Jest']],
-    'angular' => ['label' => 'Angular',            'noun' => 'Angular-разработчиков', 'stack' => ['Angular', 'TypeScript', 'RxJS', 'NgRx', 'Jest']],
-    'sa'      => ['label' => 'Системный аналитик', 'noun' => 'системных аналитиков',  'stack' => ['BPMN', 'UML', 'REST', 'SQL', 'Kafka', 'OpenAPI']],
-    'ba'      => ['label' => 'Бизнес-аналитик',    'noun' => 'бизнес-аналитиков',     'stack' => ['BPMN', 'User Stories', 'SQL', 'BI', 'CJM']],
+    'python'  => ['role' => 'dev', 'label' => 'Python',             'noun' => 'Python-разработчиков',  'stack' => ['Python', 'FastAPI', 'Django', 'PostgreSQL', 'Docker', 'Kafka', 'Redis', 'Celery']],
+    'go'      => ['role' => 'dev', 'label' => 'Go',                 'noun' => 'Go-разработчиков',      'stack' => ['Go', 'PostgreSQL', 'Kafka', 'gRPC', 'Kubernetes', 'Redis', 'ClickHouse']],
+    'dotnet'  => ['role' => 'dev', 'label' => '.NET',               'noun' => '.NET-разработчиков',    'stack' => ['C#', '.NET', 'ASP.NET Core', 'EF Core', 'PostgreSQL', 'MS SQL', 'RabbitMQ']],
+    'react'   => ['role' => 'dev', 'label' => 'React',              'noun' => 'React-разработчиков',   'stack' => ['React', 'TypeScript', 'Next.js', 'Redux', 'Storybook', 'Jest']],
+    'angular' => ['role' => 'dev', 'label' => 'Angular',            'noun' => 'Angular-разработчиков', 'stack' => ['Angular', 'TypeScript', 'RxJS', 'NgRx', 'Jest']],
+    'sa'      => ['role' => 'analyst', 'label' => 'Системный аналитик', 'noun' => 'системных аналитиков',  'stack' => ['BPMN', 'UML', 'REST', 'SQL', 'Kafka', 'OpenAPI']],
+    'ba'      => ['role' => 'analyst', 'label' => 'Бизнес-аналитик',    'noun' => 'бизнес-аналитиков',     'stack' => ['BPMN', 'User Stories', 'SQL', 'BI', 'CJM']],
 ];
 
 const PROJECT_STATUSES = ['draft' => 'Черновик', 'open' => 'Открыт', 'paused' => 'На паузе', 'closed' => 'Закрыт'];

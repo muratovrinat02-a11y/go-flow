@@ -1,5 +1,5 @@
 <?php
-/* Анкета: направление, стек, опыт → запись в базу и ссылка на регистрацию на платформе. */
+/* Анкета: специальность, специализация, опыт → запись в базу и ссылка на регистрацию на платформе. */
 declare(strict_types=1);
 require __DIR__ . '/../lib/bootstrap.php';
 require __DIR__ . '/../lib/notify.php';
@@ -11,7 +11,7 @@ if (!empty($in['website'])) json_out(['ok' => true, 'score' => 'pass', 'redirect
 
 $s = fn($k, $max = 255) => isset($in[$k]) ? mb_substr(trim((string)$in[$k]), 0, $max) : null;
 $direction = (string)($in['direction'] ?? '');
-if (!isset(DIRECTIONS[$direction]) && $direction !== 'other') json_out(['ok' => false, 'error' => 'direction'], 422);
+if (!isset(ROLES[$direction])) json_out(['ok' => false, 'error' => 'direction'], 422);
 $years = (string)($in['years'] ?? '');
 if (!isset(YEARS_OPTIONS[$years])) json_out(['ok' => false, 'error' => 'years'], 422);
 

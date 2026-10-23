@@ -26,12 +26,12 @@ return [
     'analytics_after_consent' => false,
 
     // Регистрация специалиста на платформе: сюда ведёт форма (с UTM и параметрами анкеты).
-    'register_url' => 'https://goflow.godigital.rocks/start',
+    'register_url' => 'https://goflow.godigital.rocks/specialist/register',
 
     // Первый экран: ставка и УТП.
     'hero' => [
         'rate' => '3 000',          // «до 3 000 ₽/час»
-        'month' => '450 000',       // «до 450 000 ₽/мес»
+        'month' => '500 000',       // «до 500 000 ₽/мес»
         'start' => '1–3 недели',    // «старт проекта за 1–3 недели»
     ],
 

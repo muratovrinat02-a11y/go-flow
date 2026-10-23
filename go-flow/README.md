@@ -17,7 +17,7 @@
 
 Два вопроса: направление (по желанию — стек) и опыт на стеке.
 
-- **«2–5 лет» или «6 лет и больше».** Анкета сохраняется, человек уходит на регистрацию на платформе: `https://goflow.godigital.rocks/start?utm_source=…&utm_campaign=…&ref=spec&lead=<id>&direction=…&years=…&project=…`. Платформа может прочитать эти параметры, чтобы видеть источник и проект.
+- **«2–5 лет» или «6 лет и больше».** Анкета сохраняется, человек уходит на регистрацию на платформе: `https://goflow.godigital.rocks/specialist/register?utm_source=…&utm_campaign=…&ref=spec&lead=<id>&direction=…&years=…&project=…`. Платформа может прочитать эти параметры, чтобы видеть источник и проект.
 - **«Меньше 2 лет».** Человек видит вежливое сообщение, на регистрацию не уходит.
 
 Личных данных на лендинге не собираем: e-mail или телефон человек вводит уже на платформе. Поэтому на лендинге нет согласия на обработку ПДн — только cookie-баннер для Метрики.
@@ -52,8 +52,8 @@ gzip on; gzip_types text/css application/javascript application/json image/svg+x
 | `demo` | `true` — жёлтые пометки «подтвердить». Перед запуском поставить `false` |
 | `base_url` | Можно задать явно: `https://spec.godigital.rocks` |
 | `admin.email`, `admin.password_hash` | Вход в админку. Новый хэш: `php -r "echo password_hash('НОВЫЙ_ПАРОЛЬ', PASSWORD_DEFAULT), PHP_EOL;"` |
-| `register_url` | Куда ведёт форма: `https://goflow.godigital.rocks/start` |
-| `hero` | Ставка и УТП первого экрана: «до 3 000 ₽/час», «до 450 000 ₽/мес», «старт за 1–3 недели» |
+| `register_url` | Куда ведёт форма: `https://goflow.godigital.rocks/specialist/register` |
+| `hero` | Ставка и УТП первого экрана: «до 3 000 ₽/час», «до 500 000 ₽/мес», «старт за 1–3 недели» |
 | `trust` | Блок доверия: Рейтинг Рунета, аккредитация, Сколково, компании-клиенты |
 | `ym_id`, `vk_pixel_id` | Яндекс Метрика и пиксель VK |
 | `notify.*` | Уведомления о новых анкетах в Telegram-бот (внутренний) |
