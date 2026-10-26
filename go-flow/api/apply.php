@@ -29,8 +29,18 @@ $row = [
     'link_code' => $s('lc', 16),
     'user_agent' => mb_substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 300),
 ];
-foreach (['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'yclid', 'referrer', 'landing_url', 'variant', 'page_dir'] as $k) {
+[$utm, $utmRejected] = utm_clean_all($in);
+foreach (UTM_FIELDS as $k) $row[$k] = $utm[$k] ?? null;
+$row['utm_rejected'] = json_encode($utmRejected ?: new stdClass(), JSON_UNESCAPED_UNICODE);
+foreach (['referrer', 'landing_url', 'variant', 'page_dir'] as $k) {
     $row[$k] = $s($k, 500);
+}
+// В адресе первой страницы не храним метки, которые не прошли чистку.
+if ($utmRejected && $row['landing_url']) {
+    $parts = parse_url($row['landing_url']);
+    parse_str($parts['query'] ?? '', $q);
+    foreach (array_keys($utmRejected) as $k) unset($q[$k]);
+    $row['landing_url'] = mb_substr(($parts['scheme'] ?? 'https') . '://' . ($parts['host'] ?? '') . ($parts['path'] ?? '/') . ($q ? '?' . http_build_query($q) : ''), 0, 500);
 }
 [$score, $reasons] = score_application($row);
 $row['score'] = $score;
@@ -47,11 +57,9 @@ notify_application($id);
 
 $redirect = null;
 if ($score === 'pass') {
-    $redirect = register_url([
-        'utm_source' => $row['utm_source'] ?: 'spec_landing',
-        'utm_medium' => $row['utm_medium'], 'utm_campaign' => $row['utm_campaign'],
-        'utm_content' => $row['utm_content'], 'utm_term' => $row['utm_term'],
-        'ref' => 'spec', 'lead' => $id, 'direction' => $direction, 'years' => $years,
+    // Метки передаём как пришли (после чистки). Нет меток — не придумываем источник: платформа увидит unknown/organic.
+    $redirect = register_url($utm + [
+        'landing' => 'spec', 'lead' => $id, 'direction' => $direction, 'years' => $years,
         'project' => $project ? ($project['external_id'] ?: $project['slug']) : null,
     ]);
 }

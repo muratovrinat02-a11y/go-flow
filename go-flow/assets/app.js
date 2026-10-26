@@ -19,7 +19,7 @@
   var params = new URLSearchParams(location.search);
 
   /* ================= UTM ================= */
-  var UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'yclid', 'lc'];
+  var UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_adgroup', 'utm_creative', 'yclid', 'lc'];
   var utm = {};
   (function () {
     var saved = {};
@@ -301,7 +301,9 @@
       var fallback = function () {
         // API недоступен — всё равно ведём на регистрацию, чтобы не терять человека.
         if (years.value === 'lt2') return showLow();
-        go(CONFIG.registerUrl + (CONFIG.registerUrl.indexOf('?') > -1 ? '&' : '?') + 'ref=spec&direction=' + encodeURIComponent(dir.value));
+        var q = ['landing=spec', 'direction=' + encodeURIComponent(dir.value), 'years=' + encodeURIComponent(years.value)];
+        UTM_KEYS.forEach(function (k) { if (k !== 'lc' && utm[k] && /^[A-Za-z0-9_-]{1,100}$/.test(utm[k])) q.push(k + '=' + encodeURIComponent(k === 'yclid' ? utm[k] : utm[k].toLowerCase())); });
+        go(CONFIG.registerUrl + (CONFIG.registerUrl.indexOf('?') > -1 ? '&' : '?') + q.join('&'));
       };
       fetch(CONFIG.apiApply, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data), credentials: 'same-origin' })
         .then(function (r) { return r.json(); })
