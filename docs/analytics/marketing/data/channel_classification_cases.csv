@@ -1,0 +1,17 @@
+﻿case_id,utm_source,utm_medium,expected_now,expected_option_A,expected_option_B,task,note
+M01,telegram,paid_social,paid_social,paid_social,paid_social,DT-01,проверить текущее поведение кодом
+M02,telegram_dm,outreach,,outreach,other,DT-02 (ждет решения),проверить текущее поведение кодом
+M03,hh,outreach,,outreach,other,DT-02 (ждет решения),проверить текущее поведение кодом
+M04,hh,job_board,,job_board,other,DT-02 (ждет решения),проверить текущее поведение кодом
+M13,vk_ads,paid_social,paid_social,paid_social,paid_social,DT-01,проверить текущее поведение кодом
+M14,yandex,display,display,display,display,регрессия,проверить текущее поведение кодом
+M15,habr,content,,content,other,DT-02 (ждет решения),проверить текущее поведение кодом
+M16,vc,content,,content,other,DT-02 (ждет решения),проверить текущее поведение кодом
+M17,freelance_board_a,job_board,,job_board,other,DT-02 (ждет решения),проверить текущее поведение кодом
+M18,godigital_crm,email,email,email,email,регрессия,проверить текущее поведение кодом
+M19,specialist_referral,referral_program,,referral_program,other,DT-02 (ждет решения),проверить текущее поведение кодом
+M22,internal_test,test,,exclude_test,other,DT-02 (ждет решения),проверить текущее поведение кодом
+M23,yandex,cpc,paid_search,paid_search,paid_search,регрессия,проверить текущее поведение кодом
+PKG2,linkedin,paid_social,paid_social,paid_social,paid_social,DT-01,в пакете воспроизведено: сейчас social
+PKG4,linkedin,social,social,social,social,регрессия,не должно измениться после DT-01
+PKG6,partner_network,affiliate,partner,partner,partner,регрессия,

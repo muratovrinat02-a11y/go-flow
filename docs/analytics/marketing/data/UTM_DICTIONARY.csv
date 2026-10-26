@@ -1,0 +1,12 @@
+﻿utm_medium,expected_channel,статус,current_local_classifier,utm_source (коды),когда использовать
+cpc,paid_search,ПРЕДЛОЖЕНИЕ пакета,paid_search,yandex,поисковая реклама
+display,display,ПРЕДЛОЖЕНИЕ пакета,display (НЕ ПРОВЕРЕНО),yandex,"РСЯ, гео-таргет"
+paid_social,paid_social,ПРЕДЛОЖЕНИЕ пакета,social для telegram/linkedin: РАЗРЫВ DT-01,telegram; vk_ads,"оплаченные посты в TG-каналах, VK Ads"
+social,social,ПРЕДЛОЖЕНИЕ пакета,social,telegram; vk,свои неоплаченные посты
+email,email,ПРЕДЛОЖЕНИЕ пакета,email,newsletter; godigital_crm,рассылки по своим базам
+affiliate,partner,ПРЕДЛОЖЕНИЕ пакета,partner,partner_network,оплачиваемые партнеры
+outreach,outreach,"НОВОЕ, ПРЕДЛОЖЕНИЕ","other ожидаемо, DT-02",telegram_dm; hh,личные сообщения по базам резюме
+job_board,job_board,"НОВОЕ, ПРЕДЛОЖЕНИЕ","other ожидаемо, DT-02",hh; freelance_board_a,"вакансии, объявления на биржах"
+content,content,"НОВОЕ, ПРЕДЛОЖЕНИЕ","other ожидаемо, DT-02",habr; vc,статьи и контент на площадках
+referral_program,referral_program,"НОВОЕ, ПРЕДЛОЖЕНИЕ","other ожидаемо, DT-02",specialist_referral,ссылки участников реферальной программы
+test,exclude_test,"НОВОЕ, ПРЕДЛОЖЕНИЕ","нет, DT-12",internal_test,"только приемка, исключается из KPI"
