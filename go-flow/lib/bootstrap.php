@@ -21,6 +21,7 @@ $GLOBALS['GF_CONFIG'] = require $configFile;
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/projects.php';
 require_once __DIR__ . '/scoring.php';
+require_once __DIR__ . '/utm.php';
 require_once __DIR__ . '/links.php';
 
 function cfg(string $key, $default = null)

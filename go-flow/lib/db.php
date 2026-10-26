@@ -6,7 +6,7 @@ function db(): PDO
 {
     static $pdo = null;
     if ($pdo) return $pdo;
-    $path = (string)cfg('db_path', APP_ROOT . '/data/goflow.sqlite');
+    $path = (string)(getenv('GF_DB_PATH') ?: cfg('db_path', APP_ROOT . '/data/goflow.sqlite'));
     $dir = dirname($path);
     if (!is_dir($dir)) mkdir($dir, 0750, true);
     $pdo = new PDO('sqlite:' . $path, null, null, [
@@ -106,6 +106,18 @@ CREATE TABLE IF NOT EXISTS login_attempts (
   created_at INTEGER NOT NULL
 );
 SQL);
+
+    // Колонки, добавленные после первого запуска.
+    $add = [
+        'applications' => ['utm_adgroup' => 'TEXT', 'utm_creative' => 'TEXT', 'utm_rejected' => "TEXT NOT NULL DEFAULT '{}'"],
+        'links' => ['utm_adgroup' => "TEXT NOT NULL DEFAULT ''", 'utm_creative' => "TEXT NOT NULL DEFAULT ''"],
+    ];
+    foreach ($add as $table => $cols) {
+        $have = array_column($pdo->query("PRAGMA table_info($table)")->fetchAll(), 'name');
+        foreach ($cols as $col => $type) {
+            if (!in_array($col, $have, true)) $pdo->exec("ALTER TABLE $table ADD COLUMN $col $type");
+        }
+    }
 
     if ((int)$pdo->query('SELECT COUNT(*) FROM projects')->fetchColumn() === 0 && cfg('seed_examples', true)) {
         seed_projects($pdo);

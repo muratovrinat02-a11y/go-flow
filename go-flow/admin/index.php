@@ -77,24 +77,27 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 ->execute([mb_substr((string)$_POST['notes'], 0, 5000), (int)$_POST['id']]);
             redirect(['page' => 'application', 'id' => (int)$_POST['id']], 'Заявка обновлена');
         case 'link_save':
-            $src = strtolower(preg_replace('/[^a-zA-Z0-9_\-]/', '', (string)$_POST['utm_source']));
-            if ($src === '') redirect(['page' => 'links'], 'Укажите канал (utm_source)');
-            $clean = fn($v) => strtolower(preg_replace('/[^a-zA-Z0-9_\-]/', '', (string)$v));
-            $pid = (int)($_POST['project_id'] ?? 0) ?: null;
+            $f = [];
+            foreach (['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_adgroup', 'utm_creative'] as $k) $f[$k] = strtolower(trim((string)($_POST[$k] ?? '')));
+            $errors = utm_validate_link($f);
             $id = (int)($_POST['id'] ?? 0);
+            if ($errors) {
+                $_SESSION['link_form'] = $_POST;
+                redirect(['page' => 'links'] + ($id ? ['edit' => $id] : []), 'Ссылка не сохранена: ' . implode('; ', $errors));
+            }
+            $pid = (int)($_POST['project_id'] ?? 0) ?: null;
             $vals = [
-                mb_substr(trim((string)$_POST['label']), 0, 200), $src,
-                isset(LINK_MEDIUMS[$_POST['utm_medium'] ?? '']) ? $_POST['utm_medium'] : 'outreach',
-                $clean($_POST['utm_campaign'] ?? ''), $clean($_POST['utm_content'] ?? ''), $pid,
+                mb_substr(trim((string)$_POST['label']), 0, 200), $f['utm_source'], $f['utm_medium'], $f['utm_campaign'],
+                $f['utm_content'], $f['utm_adgroup'], $f['utm_creative'], $pid,
                 !empty($_POST['paid']) ? 1 : 0, (int)preg_replace('/\D/', '', (string)($_POST['cost'] ?? '0')),
                 mb_substr(trim((string)($_POST['erid'] ?? '')), 0, 100),
             ];
             if ($id) {
-                db()->prepare('UPDATE links SET label=?, utm_source=?, utm_medium=?, utm_campaign=?, utm_content=?, project_id=?, paid=?, cost=?, erid=? WHERE id=?')
+                db()->prepare('UPDATE links SET label=?, utm_source=?, utm_medium=?, utm_campaign=?, utm_content=?, utm_adgroup=?, utm_creative=?, project_id=?, paid=?, cost=?, erid=? WHERE id=?')
                     ->execute(array_merge($vals, [$id]));
             } else {
                 $code = link_code();
-                db()->prepare('INSERT INTO links (label, utm_source, utm_medium, utm_campaign, utm_content, project_id, paid, cost, erid, code) VALUES (?,?,?,?,?,?,?,?,?,?)')
+                db()->prepare('INSERT INTO links (label, utm_source, utm_medium, utm_campaign, utm_content, utm_adgroup, utm_creative, project_id, paid, cost, erid, code) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
                     ->execute(array_merge($vals, [$code]));
                 $id = (int)db()->lastInsertId();
             }
@@ -464,20 +467,24 @@ case 'links':
         (SELECT COUNT(*) FROM applications a WHERE a.link_code = l.code AND a.score = 'pass') pass
         FROM links l LEFT JOIN projects p ON p.id = l.project_id ORDER BY l.id DESC")->fetchAll();
     $open = projects_all();
-    $f = $edit ?: ['label' => $preP ? $preP['title'] . ' → ' : '', 'utm_source' => '', 'utm_medium' => 'outreach', 'utm_campaign' => $preP ? $preP['direction'] : '', 'utm_content' => $preP ? $preP['slug'] : '', 'project_id' => $pre ?: null, 'paid' => 0, 'cost' => 0, 'erid' => '', 'id' => ''];
+    $quarter = date('Y') . 'q' . (int)ceil((int)date('n') / 3);
+    $f = $edit ?: ['label' => $preP ? $preP['title'] . ' → ' : '', 'utm_source' => '', 'utm_medium' => 'outreach', 'utm_campaign' => $quarter . '_specialists_' . ($preP ? $preP['direction'] : '') . ($preP ? '_launch' : ''), 'utm_content' => '', 'utm_adgroup' => '', 'utm_creative' => '', 'project_id' => $pre ?: null, 'paid' => 0, 'cost' => 0, 'erid' => '', 'id' => ''];
+    if (!empty($_SESSION['link_form'])) { $f = array_merge($f, array_intersect_key($_SESSION['link_form'], $f)); unset($_SESSION['link_form']); }
     ?>
     <div class="ahead"><h1>Ссылки для каналов</h1></div>
-    <p class="hint">Для каждого канала, чата или аутрич-рассылки создайте свою ссылку. Она короткая (<code><?= h(base_url()) ?>/r/abc123</code>), считает клики и передаёт UTM в анкету — в отчёте «Источники и CPA» видно, сколько анкет и прошедших скоринг дал каждый канал и сколько стоил один кандидат.</p>
+    <p class="hint">Коды — по словарю маркетинга (docs/analytics/marketing/data/UTM_DICTIONARY.csv): только a-z, 0-9 и «_», кампания в формате <code>2026q4_specialists_java_launch</code>, тестовые ссылки — тип «test». Для каждого канала, чата или аутрич-рассылки создайте свою ссылку. Она короткая (<code><?= h(base_url()) ?>/r/abc123</code>), считает клики и передаёт UTM в анкету — в отчёте «Источники и CPA» видно, сколько анкет и прошедших скоринг дал каждый канал и сколько стоил один кандидат.</p>
     <section class="card">
       <h2><?= $edit ? 'Изменить ссылку' : 'Новая ссылка' ?></h2>
       <form method="post" class="lform">
         <?= csrf_field() ?><input type="hidden" name="action" value="link_save"><input type="hidden" name="id" value="<?= h((string)$f['id']) ?>">
         <label class="af"><span>Название (для себя)</span><input name="label" value="<?= h($f['label']) ?>" placeholder="Python-джобс, пост 21.10"></label>
-        <label class="af"><span>Канал (utm_source) *</span><input name="utm_source" required value="<?= h($f['utm_source']) ?>" placeholder="tg_python_jobs" pattern="[a-zA-Z0-9_\-]+"></label>
-        <label class="af"><span>Тип</span><select name="utm_medium"><?php foreach (LINK_MEDIUMS as $k => $l): ?><option value="<?= $k ?>"<?= $f['utm_medium'] === $k ? ' selected' : '' ?>><?= h($l) ?></option><?php endforeach; ?></select></label>
-        <label class="af"><span>Кампания (utm_campaign)</span><input name="utm_campaign" value="<?= h($f['utm_campaign']) ?>" placeholder="python"></label>
+        <label class="af"><span>Площадка (utm_source) *</span><input name="utm_source" required value="<?= h($f['utm_source']) ?>" placeholder="telegram, telegram_dm, hh, vk_ads, habr" pattern="[a-z0-9_]{1,100}"></label>
+        <label class="af"><span>Тип (utm_medium) *</span><select name="utm_medium"><?php foreach (LINK_MEDIUMS as $k => $l): ?><option value="<?= $k ?>"<?= $f['utm_medium'] === $k ? ' selected' : '' ?>><?= h($l) ?></option><?php endforeach; ?></select></label>
+        <label class="af"><span>Кампания (utm_campaign) *</span><input name="utm_campaign" required value="<?= h($f['utm_campaign']) ?>" placeholder="2026q4_specialists_java_launch" pattern="(test_)?[0-9]{4}q[1-4]_(specialists|customers)_[a-z0-9_]+"></label>
         <label class="af"><span>Ведёт на</span><select name="project_id"><option value="">Лендинг</option><?php foreach ($open as $p): ?><option value="<?= (int)$p['id'] ?>"<?= (int)$f['project_id'] === (int)$p['id'] ? ' selected' : '' ?>><?= h($p['title'] . ' · ' . $p['direction_label'] . ($p['status'] !== 'open' ? ' (' . PROJECT_STATUSES[$p['status']] . ')' : '')) ?></option><?php endforeach; ?></select></label>
-        <label class="af"><span>utm_content</span><input name="utm_content" value="<?= h($f['utm_content']) ?>" placeholder="post_2110"></label>
+        <label class="af"><span>Вариант размещения (utm_content)</span><input name="utm_content" value="<?= h($f['utm_content']) ?>" placeholder="post_a, msg_a, vacancy_a" pattern="[a-z0-9_]{0,100}"></label>
+        <label class="af"><span>Группа (utm_adgroup)</span><input name="utm_adgroup" value="<?= h($f['utm_adgroup'] ?? '') ?>" placeholder="tgch_java_a, base_hh_resume" pattern="[a-z0-9_]{0,100}"></label>
+        <label class="af"><span>Креатив (utm_creative)</span><input name="utm_creative" value="<?= h($f['utm_creative'] ?? '') ?>" placeholder="post_a" pattern="[a-z0-9_]{0,100}"></label>
         <label class="af"><span>Стоимость размещения, ₽</span><input name="cost" inputmode="numeric" value="<?= h((string)$f['cost']) ?>"></label>
         <label class="acheck"><input type="checkbox" name="paid" value="1"<?= $f['paid'] ? ' checked' : '' ?>> Платное размещение (нужна маркировка)</label>
         <label class="af"><span>erid (для платного)</span><input name="erid" value="<?= h($f['erid']) ?>"></label>
@@ -491,7 +498,7 @@ case 'links':
         <?php foreach ($links as $l): ?>
           <tr>
             <td><a class="strong" href="<?= h(aurl(['page' => 'link', 'id' => $l['id']])) ?>"><?= h($l['label'] ?: $l['code']) ?></a><div class="muted mono"><?= h(link_short_url($l)) ?></div></td>
-            <td><?= h($l['utm_source']) ?><div class="muted"><?= h(LINK_MEDIUMS[$l['utm_medium']] ?? $l['utm_medium']) ?><?= $l['utm_campaign'] ? ' · ' . h($l['utm_campaign']) : '' ?></div></td>
+            <td><?= h($l['utm_source']) ?><div class="muted"><?= h(link_medium_label($l['utm_medium'])) ?><?= $l['utm_campaign'] ? ' · ' . h($l['utm_campaign']) : '' ?></div></td>
             <td><?= $l['project_title'] ? h($l['project_title']) : '<span class="muted">Лендинг</span>' ?></td>
             <td class="r"><?= (int)$l['clicks'] ?></td><td class="r"><?= (int)$l['visitors'] ?></td><td class="r"><?= (int)$l['apps'] ?></td><td class="r"><?= (int)$l['pass'] ?></td>
             <td class="r nowrap"><?= $l['cost'] ? fmt_rub($l['cost']) . ' ₽' : '—' ?></td>
@@ -527,7 +534,7 @@ case 'link':
         <h2>Ссылки</h2>
         <label class="af"><span>Короткая (считает клики)</span><div class="copy"><input id="short" readonly value="<?= h($short) ?>"><button class="abtn" type="button" data-copy="#short">Копировать</button></div></label>
         <label class="af"><span>Полная с UTM (без счётчика кликов)</span><div class="copy"><input id="full" readonly value="<?= h($full) ?>"><button class="abtn" type="button" data-copy="#full">Копировать</button></div></label>
-        <dl class="dl dl--sm"><dt>Клики</dt><dd><?= $clicks ?></dd><dt>Канал</dt><dd><?= h($l['utm_source']) ?></dd><dt>Тип</dt><dd><?= h(LINK_MEDIUMS[$l['utm_medium']] ?? '') ?></dd><dt>Ведёт на</dt><dd><?= $p ? '<a href="' . h(project_url($p)) . '" target="_blank">' . h($p['title']) . '</a>' : 'Лендинг' ?></dd></dl>
+        <dl class="dl dl--sm"><dt>Клики</dt><dd><?= $clicks ?></dd><dt>Канал</dt><dd><?= h($l['utm_source']) ?></dd><dt>Тип</dt><dd><?= h(link_medium_label($l['utm_medium'])) ?></dd><dt>Ведёт на</dt><dd><?= $p ? '<a href="' . h(project_url($p)) . '" target="_blank">' . h($p['title']) . '</a>' : 'Лендинг' ?></dd></dl>
         <form method="post" onsubmit="return confirm('Удалить ссылку? Клики по ней перестанут считаться.')"><?= csrf_field() ?><input type="hidden" name="action" value="link_delete"><input type="hidden" name="id" value="<?= (int)$l['id'] ?>"><button class="abtn abtn--danger abtn--sm" type="submit">Удалить ссылку</button></form>
       </section>
     </div>

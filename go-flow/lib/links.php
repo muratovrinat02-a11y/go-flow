@@ -2,14 +2,14 @@
 /* Трекинг-ссылки для каналов и отчёт по источникам. */
 declare(strict_types=1);
 
-const LINK_MEDIUMS = [
-    'outreach' => 'Личный аутрич',
-    'channel'  => 'Свой канал',
-    'seeding'  => 'Посев (платный)',
-    'chat'     => 'Чат',
-    'cpc'      => 'Таргет / контекст',
-    'social'   => 'Соцсети',
-];
+/** Типы ссылок = словарь utm_medium. Старые значения (channel, seeding, chat) остаются читаемыми в списке. */
+const LINK_MEDIUMS = UTM_MEDIUMS;
+const LINK_MEDIUMS_LEGACY = ['channel' => 'Свой канал (старое)', 'seeding' => 'Посев (старое)', 'chat' => 'Чат (старое)'];
+
+function link_medium_label(string $m): string
+{
+    return LINK_MEDIUMS[$m] ?? (LINK_MEDIUMS_LEGACY[$m] ?? $m);
+}
 
 function link_code(): string
 {
@@ -43,6 +43,7 @@ function link_target_url(array $l, bool $absolute = true): string
     $q = array_filter([
         'utm_source' => $l['utm_source'], 'utm_medium' => $l['utm_medium'],
         'utm_campaign' => $l['utm_campaign'], 'utm_content' => $l['utm_content'],
+        'utm_adgroup' => $l['utm_adgroup'] ?? '', 'utm_creative' => $l['utm_creative'] ?? '',
         'lc' => $l['code'],
     ], fn($v) => $v !== '' && $v !== null);
     return $base . (strpos($base, '?') === false ? '?' : '&') . http_build_query($q);
